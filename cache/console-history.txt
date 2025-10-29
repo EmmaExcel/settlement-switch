@@ -1,0 +1,39 @@
+console.log("New contract deployed to:", contractAddress);
+const contractAddress = await stablecoinSwitch.getAddress();
+await stablecoinSwitch.waitForDeployment();
+const stablecoinSwitch = await StablecoinSwitch.deploy();
+const StablecoinSwitch = await ethers.getContractFactory("StablecoinSwitch");
+console.log("Owner:", owner);// In your Hardhat console
+const owner = await stablecoinSwitch.owner();
+const contractAddress = "0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199"
+const stablecoinSwitch = await StablecoinSwitch.attach(contractAddress);
+const contractAddress = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
+const StablecoinSwitch = await ethers.getContractFactory("StablecoinSwitch");
+console.log("Chain ID:", chainId.toString());
+const chainId = await stablecoinSwitch.getChainId();
+const StablecoinSwitch = await ethers.getContractFactory("StablecoinSwitch");
+// console.log("Optimal Path:", optimalPath);
+// );
+//   0           // Priority (0 for Cost, 1 for Speed)
+//   1,          // toChainId
+//   "1000000",  // amount
+//   "0xTokenAddress",
+// const optimalPath = await stablecoinSwitch.getOptimalPath(
+// Example: Get optimal path (you'll need to provide parameters)
+});  active: route.active  speedSeconds: route.speedSeconds.toString(),  costBps: route.costBps.toString(),console.log("Route for chain 1:", {
+const route = await stablecoinSwitch.mockRoutes(1);
+// Example: Get mock route for a specific chain (e.g., chainId 1 for Ethereum)
+console.log("LiFi Bridge Adapter:", lifiBridge);
+const lifiBridge = await stablecoinSwitch.liFiBridgeAdapter();
+// Get the LiFi bridge adapter address
+console.log("Chain ID:", chainId.toString());
+const chainId = await stablecoinSwitch.getChainId();
+// Check the current chain ID
+console.log("Owner:", owner);
+const owner = await stablecoinSwitch.owner();
+// Get the owner of the contract
+const stablecoinSwitch = await StablecoinSwitch.attach(contractAddress);
+const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+// Attach to the deployed contract
+const StablecoinSwitch = await ethers.getContractFactory("StablecoinSwitch");
+// Get the contract factory
