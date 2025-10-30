@@ -2,7 +2,7 @@
 export const CONTRACT_ADDRESSES = {
   // Sepolia Testnet (Chain ID: 11155111)
   sepolia: {
-    StablecoinSwitch: "0xc16a01431b1d980b0df125df4d8df4633c4d5ba0",
+    StablecoinSwitch: "0x1fCa7BE27d3981Ab8783f862672F2bE6346383D5",
     ArbitrumInbox: "0xaae29b0366299461418f5324a79afc425be5ae21",
     // Add other contract addresses as they get deployed
     ETHBridge: "", // Add when deployed
@@ -32,6 +32,9 @@ export const SUPPORTED_TOKENS = {
     USDT: "0x7169D38820dfd117C3FA1f22a697dBA58d90BA06", 
     DAI: "0x3e622317f8C93f7328350cF0B56d9eD4C620C5d6",
     // Add more tokens as needed
+  },
+  arbitrumSepolia: {
+    USDC: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
   }
 } as const;
 

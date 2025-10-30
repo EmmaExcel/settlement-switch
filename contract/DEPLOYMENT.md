@@ -75,7 +75,7 @@ source .env
 |-----------|-------|-------------|
 | **Chain ID** | 11155111 | Ethereum Sepolia testnet |
 | **ETH/USD Price Feed** | `0x694AA1769357215DE4FAC081bf1f309aDC325306` | Chainlink ETH/USD aggregator |
-| **USDC/USD Price Feed** | `0xA2F78ab2355fe2f984D808B5CeE7FD0A93D5270E` | DAI/USD used as proxy |
+| **USDC/USD Price Feed** | `0x14866185B1962B63C3Ea9E03Bc1da838bab34C19` | DAI/USD used as proxy (USDC/USD unavailable on Sepolia) |
 | **USDC Token** | `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238` | Sepolia USDC |
 | **DAI Token** | `0x3e622317f8C93f7328350cF0B56d9eD4C620C5d6` | Sepolia DAI |
 | **USDT Token** | `0x7169D38820dfd117C3FA1f22a697dBA58d90BA06` | Sepolia USDT |
@@ -195,7 +195,7 @@ cast call <CONTRACT_ADDRESS> \
 forge verify-contract \
   --chain sepolia \
   --etherscan-api-key $ETHERSCAN_API_KEY \
-  --constructor-args $(cast abi-encode "constructor(address,address,uint256,uint256)" <ETH_USD_FEED> <USDC_USD_FEED> <BASE_FEE> <GAS_MULTIPLIER>) \
+  --constructor-args $(cast abi-encode "constructor(address,address,address)" <ETH_USD_FEED> <USDC_USD_FEED> <OWNER_ADDRESS>) \
   <CONTRACT_ADDRESS> \
   src/StablecoinSwitch.sol:StablecoinSwitch
 ```
@@ -206,7 +206,7 @@ forge verify-contract \
 forge verify-contract \
   --chain arbitrum-sepolia \
   --etherscan-api-key $ARBISCAN_API_KEY \
-  --constructor-args $(cast abi-encode "constructor(address,address,uint256,uint256)" <ETH_USD_FEED> <USDC_USD_FEED> <BASE_FEE> <GAS_MULTIPLIER>) \
+  --constructor-args $(cast abi-encode "constructor(address,address,address)" <ETH_USD_FEED> <USDC_USD_FEED> <OWNER_ADDRESS>) \
   <CONTRACT_ADDRESS> \
   src/StablecoinSwitch.sol:StablecoinSwitch
 ```
@@ -238,6 +238,31 @@ forge verify-contract \
 ## Troubleshooting
 
 ### Common Issues
+
+#### Price feeds unavailable or stale
+
+- Confirm feed addresses match Chainlink docs for your network:
+  - Sepolia USDC/USD is unavailable; use DAI/USD `0x14866185B1962B63C3Ea9E03Bc1da838bab34C19` as a proxy.
+  - Sepolia ETH/USD: `0x694AA1769357215DE4FAC081bf1f309aDC325306`.
+- Check feed freshness with `latestRoundData`:
+  ```bash
+  cast call <FEED_ADDRESS> "latestRoundData()" --rpc-url $SEPOLIA_RPC_URL
+  # Returns (roundId, answer, startedAt, updatedAt, answeredInRound)
+  ```
+- For testnets, set a larger staleness window to accommodate infrequent updates:
+  ```bash
+  # Using the configuration script
+  SWITCH_ADDRESS=<DEPLOYED_SWITCH> \
+  MAX_STALENESS_SECONDS=86400 \
+  forge script contract/script/ConfigureStablecoinSwitch.s.sol:ConfigureStablecoinSwitch \
+    --rpc-url $SEPOLIA_RPC_URL \
+    --private-key $PRIVATE_KEY \
+    --broadcast
+  ```
+- If your deployed contract exposes `areFeedsHealthy()`, you can call it directly:
+  ```bash
+  cast call <CONTRACT_ADDRESS> "areFeedsHealthy()" --rpc-url $SEPOLIA_RPC_URL
+  ```
 
 #### 1. Insufficient Gas
 

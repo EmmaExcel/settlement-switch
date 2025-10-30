@@ -34,7 +34,8 @@ contract DeployStablecoinSwitch is BaseDeployment {
         
         // Get deployer private key from environment
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        
+        address deployerAddr = vm.addr(deployerPrivateKey);
+
         vm.startBroadcast(deployerPrivateKey);
         
         DeploymentParams memory params = getDeploymentParams();
@@ -43,11 +44,15 @@ contract DeployStablecoinSwitch is BaseDeployment {
         stablecoinSwitch = new StablecoinSwitch(
             params.ethUsdPriceFeed,
             params.usdcUsdPriceFeed,
-            config.deployer // Use the deployer from network config
+            deployerAddr // Ensure on-chain owner matches broadcasting account
         );
         
         // Initialize supported tokens
         initializeSupportedTokens(params);
+        
+        // For testnets, relax feed staleness to 24h to avoid stale errors
+        // On mainnet, prefer tighter thresholds configured via separate script
+        stablecoinSwitch.setMaxPriceStalenessSeconds(86400);
         
         // Log deployment
         _logDeployment("StablecoinSwitch", address(stablecoinSwitch));
@@ -68,7 +73,7 @@ contract DeployStablecoinSwitch is BaseDeployment {
             // Sepolia Testnet
             return DeploymentParams({
                 ethUsdPriceFeed: 0x694AA1769357215DE4FAC081bf1f309aDC325306,
-                usdcUsdPriceFeed: 0xA2F78ab2355fe2f984D808B5CeE7FD0A93D5270E, // Using DAI/USD as proxy for USDC/USD
+                usdcUsdPriceFeed: 0x14866185B1962B63C3Ea9E03Bc1da838bab34C19, // Sepolia DAI/USD used as proxy for USDC/USD
                 usdcToken: 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238, // Sepolia USDC
                 daiToken: 0x3e622317f8C93f7328350cF0B56d9eD4C620C5d6, // Sepolia DAI
                 usdtToken: 0x7169D38820dfd117C3FA1f22a697dBA58d90BA06, // Sepolia USDT

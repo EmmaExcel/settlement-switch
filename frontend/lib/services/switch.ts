@@ -13,6 +13,13 @@ const STABLECOIN_SWITCH = CONTRACT_ADDRESSES.sepolia
   .StablecoinSwitch as `0x${string}`;
 const USDC = SUPPORTED_TOKENS.sepolia.USDC as `0x${string}`;
 
+function getUsdcForChain(chainId: number): `0x${string}` {
+  if (chainId === 11155111) return SUPPORTED_TOKENS.sepolia.USDC as `0x${string}`;
+  if (chainId === 421614) return SUPPORTED_TOKENS.arbitrumSepolia.USDC as `0x${string}`;
+  // Default to source USDC; contract will reject unsupported chain/token
+  return SUPPORTED_TOKENS.sepolia.USDC as `0x${string}`;
+}
+
 // Minimal Chainlink AggregatorV3 ABI for latestRoundData
 const AggregatorAbi = [
   {
@@ -63,6 +70,10 @@ function mapSwitchError(err: any, ctx?: { destChainId?: number }) {
   if (sig.includes("TransferFailed") || raw.includes("TransferFailed")) {
     return "Token transfer failed. Ensure sufficient balance and allowance, then retry.";
   }
+  // Common ERC20 revert surfaced by viem
+  if (raw.toLowerCase().includes("transfer amount exceeds allowance")) {
+    return "USDC allowance too low. Please approve USDC to StablecoinSwitch and retry.";
+  }
   // Default fallback
   return raw;
 }
@@ -97,11 +108,12 @@ export async function readOptimalPath(
       console.table({ amountUnits: String(amountUnits), destChainId, priority });
       console.groupEnd();
     }
+    const toToken = getUsdcForChain(destChainId);
     routeInfo = await publicClient.readContract({
       address: STABLECOIN_SWITCH,
       abi: StablecoinSwitchAbi,
       functionName: "getOptimalPath",
-      args: [USDC, USDC, amountUnits, BigInt(destChainId), priority],
+      args: [USDC, toToken, amountUnits, BigInt(destChainId), priority],
     });
   } catch (err: any) {
     const msg = mapSwitchError(err, { destChainId });
@@ -125,12 +137,19 @@ async function ensureContractReady(
   publicClient: PublicClient,
   destChainId: number
 ) {
-  const [tokenSupported, chainSupported] = await Promise.all([
+  const toToken = getUsdcForChain(destChainId);
+  const [tokenSupported, toTokenSupported, chainSupported] = await Promise.all([
     publicClient.readContract({
       address: STABLECOIN_SWITCH,
       abi: StablecoinSwitchAbi,
       functionName: "isTokenSupported",
       args: [USDC],
+    }) as Promise<boolean>,
+    publicClient.readContract({
+      address: STABLECOIN_SWITCH,
+      abi: StablecoinSwitchAbi,
+      functionName: "isTokenSupported",
+      args: [toToken],
     }) as Promise<boolean>,
     publicClient.readContract({
       address: STABLECOIN_SWITCH,
@@ -143,6 +162,12 @@ async function ensureContractReady(
   if (!tokenSupported) {
     throw new Error(
       `USDC is not enabled in StablecoinSwitch. Ask owner to call setTokenSupport(USDC, true).`
+    );
+  }
+
+  if (!toTokenSupported) {
+    throw new Error(
+      `Destination USDC is not enabled. Ask owner to call setTokenSupport(${toToken}, true).`
     );
   }
 
@@ -260,7 +285,19 @@ export async function ensureAllowance(
   });
 
   if ((allowance as bigint) < amountUnits) {
-    return walletClient.writeContract({
+    // Some ERC20 implementations (e.g., USDC) require resetting allowance to 0 before updating
+    if ((allowance as bigint) > BigInt(0)) {
+      const resetHash = await walletClient.writeContract({
+        address: USDC,
+        abi: ERC20Abi,
+        functionName: "approve",
+        args: [spender, BigInt(0)],
+        chain: walletClient.chain,
+        account: owner,
+      });
+      await publicClient.waitForTransactionReceipt({ hash: resetHash });
+    }
+    const hash = await walletClient.writeContract({
       address: USDC,
       abi: ERC20Abi,
       functionName: "approve",
@@ -268,6 +305,8 @@ export async function ensureAllowance(
       chain: walletClient.chain,
       account: owner,
     });
+    await publicClient.waitForTransactionReceipt({ hash });
+    return hash;
   }
   return undefined;
 }

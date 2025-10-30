@@ -15,6 +15,7 @@ import {
   subscribeEvents,
   requireNetwork,
 } from "@/lib/services/switch";
+import { SUPPORTED_TOKENS } from "@/lib/addresses";
 
 type Chain = "SEPOLIA" | "ARBITRUM_SEPOLIA";
 
@@ -49,6 +50,9 @@ export default function BridgePage() {
   const [txStatus, setTxStatus] = useState<string | null>(null);
   const [routeError, setRouteError] = useState<string | null>(null);
   const [adapterDetected, setAdapterDetected] = useState<boolean>(false);
+  const needsApproval = useMemo(() =>
+    (routeError || "").toLowerCase().includes("allowance"),
+  [routeError]);
 
   // Live UI values for instant feedback
   const [estGas, setEstGas] = useState(0.25);
@@ -89,45 +93,7 @@ export default function BridgePage() {
         return;
       }
 
-      // Pre-check: price feeds health to avoid revert-heavy route calls
-      try {
-        const [ethOk, usdcOk, ethUpdatedAt, usdcUpdatedAt] = (await publicClient.readContract({
-          address: SwitchConstants.contract,
-          abi: StablecoinSwitchAbi,
-          functionName: "areFeedsHealthy",
-        })) as [boolean, boolean, bigint, bigint];
-
-        if (!ethOk || !usdcOk) {
-          const ethTs = Number(ethUpdatedAt || 0) * 1000;
-          const usdcTs = Number(usdcUpdatedAt || 0) * 1000;
-          const ethStr = ethTs ? new Date(ethTs).toLocaleString() : "unknown";
-          const usdcStr = usdcTs ? new Date(usdcTs).toLocaleString() : "unknown";
-          setRoutes([]);
-          setRouteError(
-            `Price feeds unavailable or stale. ETH feed: ${ethOk ? "OK" : "STALE"} (updated ${ethStr}); USDC feed: ${usdcOk ? "OK" : "STALE"} (updated ${usdcStr}). Ask owner to adjust maxPriceStalenessSeconds or verify feed addresses in deployment.`
-          );
-          return;
-        }
-        } catch (_) {
-          // Fallback: if areFeedsHealthy() is not present on chain, directly check aggregator freshness
-          try {
-            const { ensureFeedsHealthy } = await import("@/lib/services/switch");
-            const { ethOk, usdcOk, ethUpdatedAt, usdcUpdatedAt } = await ensureFeedsHealthy(publicClient);
-            if (!ethOk || !usdcOk) {
-            const ethTs = Number(ethUpdatedAt ?? BigInt(0)) * 1000;
-            const usdcTs = Number(usdcUpdatedAt ?? BigInt(0)) * 1000;
-            const ethStr = ethTs ? new Date(ethTs).toLocaleString() : "unknown";
-            const usdcStr = usdcTs ? new Date(usdcTs).toLocaleString() : "unknown";
-            setRoutes([]);
-            setRouteError(
-              `Price feeds unavailable or stale. ETH feed: ${ethOk ? "OK" : "STALE"} (updated ${ethStr}); USDC feed: ${usdcOk ? "OK" : "STALE"} (updated ${usdcStr}).`
-            );
-            return;
-            }
-          } catch {
-            // Continue; downstream error mapping will handle
-          }
-        }
+      // Removed pre-check of price feeds health to avoid blocking UI
 
       const priority: 0 | 1 = speedPreference >= 66 ? 1 : 0;
       const route = await readOptimalPath(publicClient, amountUnits, destChainId, priority);
@@ -139,9 +105,13 @@ export default function BridgePage() {
         },
       ]);
 
+      const toToken = toChain === "ARBITRUM_SEPOLIA"
+        ? (SUPPORTED_TOKENS.arbitrumSepolia.USDC as `0x${string}`)
+        : (SUPPORTED_TOKENS.sepolia.USDC as `0x${string}`);
+
       const gas = await estimateRouteGas(publicClient, {
         fromToken: SwitchConstants.usdc,
-        toToken: SwitchConstants.usdc,
+        toToken: toToken,
         amount: amountUnits,
         toChainId: destChainId,
         priority,
@@ -358,9 +328,13 @@ export default function BridgePage() {
       const priority: 0 | 1 = speedPreference >= 66 ? 1 : 0;
       const recipient = (toAddress || address) as `0x${string}`;
 
+      const toTokenWrite = toChain === "ARBITRUM_SEPOLIA"
+        ? (SUPPORTED_TOKENS.arbitrumSepolia.USDC as `0x${string}`)
+        : (SUPPORTED_TOKENS.sepolia.USDC as `0x${string}`);
+
       const { hash, receipt } = await routeTransaction(walletClient, publicClient, {
         fromToken: SwitchConstants.usdc,
-        toToken: SwitchConstants.usdc,
+        toToken: toTokenWrite,
         amount: amountUnits,
         toChainId: destChainId,
         priority,
@@ -375,6 +349,29 @@ export default function BridgePage() {
       alert("Bridge failed: " + (err?.message || "unknown error"));
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // === Approve-only Action ===
+  const handleApprove = async () => {
+    try {
+      if (!walletClient || !publicClient || !address) {
+        alert("Wallet not ready");
+        return;
+      }
+      if (!amount || Number(amount) <= 0) {
+        alert("Enter a valid amount greater than zero.");
+        return;
+      }
+      await requireNetwork(chainId, walletClient, CHAIN_ID[fromChain]);
+      const amountUnits = BigInt(Math.floor(Number(amount) * 1e6));
+      await ensureAllowance(publicClient, walletClient, address as `0x${string}`, SwitchConstants.contract, amountUnits);
+      setRouteError(null);
+      alert("USDC approved. You can now bridge.");
+    } catch (err: any) {
+      const msg = String(err?.message || err);
+      setRouteError(msg);
+      alert("Approve failed: " + msg);
     }
   };
 
@@ -395,7 +392,7 @@ export default function BridgePage() {
         {/* ==== FROM ==== */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">
-            Price
+            Amount (USDC)
           </label>
           <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
             <input
@@ -411,6 +408,9 @@ export default function BridgePage() {
               selected={fromChain}
               setSelected={setFromChain}
             />
+          </div>
+          <div className="text-xs text-gray-500 mt-1">
+            This bridge moves USDC only. The icon shows the network (Sepolia), not the token.
           </div>
         </div>
 
@@ -511,12 +511,27 @@ export default function BridgePage() {
 
         {/* ==== ACTION ==== */}
         <div className="space-y-2">
+          {needsApproval && (
+            <button
+              onClick={handleApprove}
+              disabled={!isConnected || !amount || loading}
+              className={clsx(
+                "w-full py-3 font-semibold rounded-2xl transition-all flex items-center justify-center gap-2",
+                isConnected && amount && !loading
+                  ? "bg-purple-600 hover:bg-purple-700 text-white"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              )}
+            >
+              Approve USDC
+            </button>
+          )}
+
           <button
             onClick={handleBridge}
-            disabled={!isConnected || !amount || loading || !!routeError || routes.length === 0}
+            disabled={!isConnected || !amount || loading || needsApproval}
             className={clsx(
               "w-full py-4 font-semibold rounded-2xl transition-all flex items-center justify-center gap-2",
-              isConnected && amount && !loading && !routeError && routes.length > 0
+              isConnected && amount && !loading && !needsApproval
                 ? "bg-emerald-600 hover:bg-emerald-700 text-white"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
             )}

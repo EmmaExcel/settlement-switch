@@ -26,6 +26,7 @@ contract ConfigureStablecoinSwitch is Script {
         address switchAddr = vm.envAddress("SWITCH_ADDRESS");
         address adapter;
         uint256 gasCost = _getGasCost();
+        uint256 maxStaleness = _getMaxStaleness();
 
         // ADAPTER_ADDRESS is optional; if not set, we only enable chain support
         try vm.envAddress("ADAPTER_ADDRESS") returns (address a) {
@@ -46,6 +47,9 @@ contract ConfigureStablecoinSwitch is Script {
         } else {
             console2.log("No ADAPTER_ADDRESS provided; enabling chain support only");
         }
+        if (maxStaleness != type(uint256).max) {
+            console2.log("Max Price Staleness (seconds):", maxStaleness);
+        }
 
         vm.startBroadcast();
         // Enable destination chain support
@@ -53,6 +57,10 @@ contract ConfigureStablecoinSwitch is Script {
         // Conditionally add bridge adapter if provided
         if (adapter != address(0)) {
             stablecoinSwitch.addBridgeAdapter(DEST_CHAIN_ID, adapter, "Arbitrum", gasCost);
+        }
+        // Optionally set staleness window if provided via env
+        if (maxStaleness != type(uint256).max) {
+            stablecoinSwitch.setMaxPriceStalenessSeconds(maxStaleness);
         }
         vm.stopBroadcast();
 
@@ -65,6 +73,15 @@ contract ConfigureStablecoinSwitch is Script {
             return v;
         } catch {
             return 0;
+        }
+    }
+
+    function _getMaxStaleness() internal view returns (uint256) {
+        // MAX_STALENESS_SECONDS is optional; if unset, return sentinel value
+        try vm.envUint("MAX_STALENESS_SECONDS") returns (uint256 v) {
+            return v;
+        } catch {
+            return type(uint256).max;
         }
     }
 }

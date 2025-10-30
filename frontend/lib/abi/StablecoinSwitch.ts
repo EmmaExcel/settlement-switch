@@ -111,6 +111,33 @@ export const StablecoinSwitchAbi = [
   },
   {
     type: "function",
+    name: "setMaxPriceStalenessSeconds",
+    inputs: [
+      { name: "seconds_", type: "uint256", internalType: "uint256" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "ethUsdPriceFeed",
+    inputs: [],
+    outputs: [
+      { name: "", type: "address", internalType: "address" },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "usdcUsdPriceFeed",
+    inputs: [],
+    outputs: [
+      { name: "", type: "address", internalType: "address" },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
     name: "routeTransaction",
     inputs: [
       {
