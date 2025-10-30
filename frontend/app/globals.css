@@ -120,3 +120,15 @@
     @apply bg-background text-foreground;
   }
 }
+
+
+@keyframes rotate-once {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(180deg); }
+}
+
+@layer utilities {
+  .animate-rotate-once {
+    animation: rotate-once 0.4s ease-in-out;
+  }
+}

@@ -4,25 +4,25 @@ import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { clsx } from 'clsx';
 
-export default function EthereumDropdown({
+export default function ChainDropdown({
   selected,
   setSelected,
 }: {
-  selected: "ETH" | "MATIC";
-  setSelected: (selected: "ETH" | "MATIC") => void;
+  selected: "SEPOLIA" | "ARBITRUM_SEPOLIA";
+  setSelected: (selected: "SEPOLIA" | "ARBITRUM_SEPOLIA") => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
 
   const options = [
-    { 
-      value: 'ETH', 
-      label: 'ETH', 
-      iconUrl: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png' 
+    {
+      value: 'SEPOLIA',
+      label: 'Sepolia',
+      iconUrl: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png',
     },
-    { 
-      value: 'MATIC', 
-      label: 'MATIC', 
-      iconUrl: 'https://assets.coingecko.com/coins/images/4713/small/matic-token-icon.png' 
+    {
+      value: 'ARBITRUM_SEPOLIA',
+      label: 'Arbitrum Sepolia',
+      iconUrl: 'https://assets.coingecko.com/coins/images/16547/small/arb.png',
     },
   ] as const;
 

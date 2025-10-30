@@ -1,0 +1,141 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.23;
+
+import {BaseDeployment} from "./BaseDeployment.s.sol";
+import {Counter} from "../src/Counter.sol";
+import {ArbitrumToken} from "../src/ArbitrumToken.sol";
+import {ArbitrumNFT} from "../src/ArbitrumNFT.sol";
+import {console2} from "forge-std/Script.sol";
+
+/**
+ * @title DeployArbitrum
+ * @dev Comprehensive deployment script for Arbitrum networks
+ */
+contract DeployArbitrum is BaseDeployment {
+    // Deployed contracts
+    Counter public counter;
+    ArbitrumToken public token;
+    ArbitrumNFT public nft;
+
+    // Deployment parameters
+    string constant TOKEN_NAME = "Arbitrum Template Token";
+    string constant TOKEN_SYMBOL = "ATT";
+    uint256 constant INITIAL_SUPPLY = 1_000_000 * 10**18; // 1M tokens
+
+    string constant NFT_NAME = "Arbitrum Template NFT";
+    string constant NFT_SYMBOL = "ATN";
+    string constant BASE_URI = "https://api.arbitrum-template.com/metadata/";
+
+    function run() public onlyValidNetwork {
+        console2.log("Starting Arbitrum deployment...");
+        
+        vm.startBroadcast(activeNetworkConfig.deployerKey);
+
+        // Deploy Counter contract
+        deployCounter();
+        
+        // Deploy Token contract
+        deployToken();
+        
+        // Deploy NFT contract
+        deployNFT();
+
+        vm.stopBroadcast();
+
+        // Log all deployments
+        logAllDeployments();
+        
+        // Provide verification commands
+        provideVerificationCommands();
+    }
+
+    /**
+     * @dev Deploy Counter contract
+     */
+    function deployCounter() internal {
+        console2.log("Deploying Counter contract...");
+        counter = new Counter();
+        logDeployment("Counter", address(counter));
+    }
+
+    /**
+     * @dev Deploy ERC20 Token contract
+     */
+    function deployToken() internal {
+        console2.log("Deploying ArbitrumToken contract...");
+        token = new ArbitrumToken(
+            TOKEN_NAME,
+            TOKEN_SYMBOL,
+            INITIAL_SUPPLY,
+            activeNetworkConfig.deployer
+        );
+        logDeployment("ArbitrumToken", address(token));
+    }
+
+    /**
+     * @dev Deploy NFT contract
+     */
+    function deployNFT() internal {
+        console2.log("Deploying ArbitrumNFT contract...");
+        nft = new ArbitrumNFT(
+            NFT_NAME,
+            NFT_SYMBOL,
+            BASE_URI,
+            activeNetworkConfig.deployer
+        );
+        logDeployment("ArbitrumNFT", address(nft));
+    }
+
+    /**
+     * @dev Log all deployment addresses
+     */
+    function logAllDeployments() internal view {
+        console2.log("\n=== ALL DEPLOYED CONTRACTS ===");
+        console2.log("Network:", activeNetworkConfig.name);
+        console2.log("Chain ID:", activeNetworkConfig.chainId);
+        console2.log("Deployer:", activeNetworkConfig.deployer);
+        console2.log("");
+        console2.log("Counter:", address(counter));
+        console2.log("ArbitrumToken:", address(token));
+        console2.log("ArbitrumNFT:", address(nft));
+        console2.log("==============================\n");
+    }
+
+    /**
+     * @dev Provide verification commands for all contracts
+     */
+    function provideVerificationCommands() internal view {
+        if (block.chainid == 31337) return; // Skip for local network
+
+        console2.log("=== VERIFICATION COMMANDS ===");
+        
+        string memory chainFlag = block.chainid == 42161 ? "--chain arbitrum" : "--chain arbitrum-sepolia";
+        string memory apiKeyVar = "$ARBISCAN_API_KEY";
+        
+        console2.log("# Verify Counter:");
+        console2.log("forge verify-contract");
+        console2.log(address(counter));
+        console2.log("src/Counter.sol:Counter");
+        console2.log(chainFlag);
+        console2.log("--etherscan-api-key");
+        console2.log(apiKeyVar);
+        
+        console2.log("\n# Verify ArbitrumToken:");
+        console2.log("forge verify-contract");
+        console2.log(address(token));
+        console2.log("src/ArbitrumToken.sol:ArbitrumToken");
+        console2.log(chainFlag);
+        console2.log("--etherscan-api-key");
+        console2.log(apiKeyVar);
+        
+        console2.log("\n# Verify ArbitrumNFT:");
+        console2.log("forge verify-contract");
+        console2.log(address(nft));
+        console2.log("src/ArbitrumNFT.sol:ArbitrumNFT");
+        console2.log(chainFlag);
+        console2.log("--etherscan-api-key");
+        console2.log(apiKeyVar);
+        
+        console2.log("=============================");
+    }
+}
