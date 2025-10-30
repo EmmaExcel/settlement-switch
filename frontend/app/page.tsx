@@ -1,10 +1,11 @@
+
 'use client';
 
 import axios from 'axios';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import clsx from 'clsx';
 import { useAccount } from 'wagmi';
-import { ArrowUpDown, Zap, DollarSign, Clock } from 'lucide-react';
+import { ArrowUpDown, Zap, DollarSign, Clock, Gauge } from 'lucide-react';
 import EthereumPolygonDropdown from './components/test';
 
 type Chain = 'ETH' | 'MATIC';
@@ -18,7 +19,6 @@ interface Route {
   bridge: string;
   estimatedGasUSD: number;
   estimatedTimeSeconds: number;
-  // Add other fields if needed
 }
 
 export default function BridgePage() {
@@ -27,22 +27,27 @@ export default function BridgePage() {
   const [fromChain, setFromChain] = useState<Chain>('ETH');
   const [toChain, setToChain] = useState<Chain>('MATIC');
   const [toAddress, setToAddress] = useState('');
-  const [activeTab, setActiveTab] = useState<'bridge' | 'swap'>('bridge');
   const [routes, setRoutes] = useState<Route[]>([]);
   const [loading, setLoading] = useState(false);
+  const [speedPreference, setSpeedPreference] = useState(50); // 0 = cheapest, 100 = fastest
 
-  // Auto-swap chains if same
+  // Live UI values for instant feedback
+  const [estGas, setEstGas] = useState(0.25);
+  const [estTime, setEstTime] = useState(20);
+  const [bridgeName, setBridgeName] = useState('polygon');
+
+  // === Auto-swap if same chain ===
   useEffect(() => {
     if (fromChain === toChain) {
       setToChain(fromChain === 'ETH' ? 'MATIC' : 'ETH');
     }
   }, [fromChain, toChain]);
 
-  // === Fetch Routes ===
+  // === Fetch Routes from API ===
   const fetchRoutes = useCallback(async () => {
     if (!isConnected || !address || !amount || Number(amount) <= 0) return;
-
     setLoading(true);
+
     try {
       const response = await axios.get('/api/getRoute', {
         params: {
@@ -55,9 +60,7 @@ export default function BridgePage() {
       });
 
       const data = response.data;
-      // Assume API returns { routes: [...] }
       const fetchedRoutes: Route[] = Array.isArray(data.routes) ? data.routes : [data];
-
       setRoutes(fetchedRoutes);
     } catch (error: any) {
       console.error('Error fetching routes:', error.response?.data || error.message);
@@ -67,45 +70,66 @@ export default function BridgePage() {
     }
   }, [address, isConnected, amount, fromChain, toChain]);
 
-  // === Auto-fetch on change ===
+  // === Auto-fetch when amount or chains change ===
   useEffect(() => {
     const timer = setTimeout(() => {
       if (amount && Number(amount) > 0) {
         fetchRoutes();
       }
-    }, 600); // Debounce
-
+    }, 600);
     return () => clearTimeout(timer);
   }, [amount, fromChain, toChain, fetchRoutes]);
 
-  // === Find Best Route (Fastest + Cheapest Combined Score) ===
+  // === Dynamic best route (computed instantly) ===
   const bestRoute = useMemo(() => {
     if (routes.length === 0) return null;
 
+    const speedWeight = speedPreference / 100;
+    const gasWeight = 1 - speedWeight;
+
     return routes.reduce((best, route) => {
       const bestScore = best
-        ? best.estimatedGasUSD * 0.6 + (best.estimatedTimeSeconds / 60) * 0.4
+        ? best.estimatedGasUSD * gasWeight +
+          (best.estimatedTimeSeconds / 60) * speedWeight
         : Infinity;
+
       const currentScore =
-        route.estimatedGasUSD * 0.6 + (route.estimatedTimeSeconds / 60) * 0.4;
+        route.estimatedGasUSD * gasWeight +
+        (route.estimatedTimeSeconds / 60) * speedWeight;
 
       return currentScore < bestScore ? route : best;
     }, null as Route | null);
-  }, [routes]);
+  }, [routes, speedPreference]);
+
+  // === Real-time dynamic display values (even before API) ===
+  useEffect(() => {
+    // Simulate local instant feedback
+    const gas = 0.001 * speedPreference + 0.2; // Example: faster → slightly higher gas
+    const time = Math.max(2, 25 - speedPreference / 5); // faster → lower time
+    const bridge =
+      speedPreference < 33
+        ? 'LayerZero'
+        : speedPreference < 66
+        ? 'Synapse'
+        : 'Polygon Bridge';
+
+    setEstGas(gas);
+    setEstTime(time);
+    setBridgeName(bridge);
+  }, [speedPreference]);
 
   // === Debug Log ===
   const handleDebugLog = () => {
     console.clear();
     console.table({
-      'Wallet Connected': isConnected,
-      'Address': address || 'Not connected',
-      'Amount': amount || 'Empty',
-      'From Chain': fromChain,
-      'To Chain': toChain,
-      'Routes Count': routes.length,
-      'Best Route': bestRoute?.bridge || 'None',
+      Address: address || 'Not connected',
+      Amount: amount || 'Empty',
+      From: fromChain,
+      To: toChain,
+      Speed: speedPreference,
+      Routes: routes.length,
+      BestRoute: bestRoute?.bridge || 'None',
     });
-    console.log('All Routes:', routes);
   };
 
   // === Bridge Action ===
@@ -114,33 +138,28 @@ export default function BridgePage() {
       alert('No valid route found');
       return;
     }
-    // Proceed with bestRoute
     console.log('Bridging via:', bestRoute);
-    // Trigger actual transaction here
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-indigo-50 p-4">
       <div className="w-full max-w-md bg-white rounded-3xl shadow-lg p-6 space-y-6">
-        {/* ==== FROM SECTION ==== */}
+        {/* ==== FROM ==== */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">From</label>
+          <label className="block text-sm font-medium text-gray-700">Price</label>
           <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
             <input
               type="text"
               value={amount ? Number(amount).toLocaleString() : ''}
               placeholder="$0.00"
-              onChange={(e) => {
-                const value = e.target.value.replace(/[^\d.]/g, '');
-                setAmount(value);
-              }}
+              onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ''))}
               className="text-2xl font-semibold bg-transparent outline-none flex-1 min-w-0"
             />
             <EthereumPolygonDropdown selected={fromChain} setSelected={setFromChain} />
           </div>
         </div>
 
-        {/* ==== SWAP ARROW ==== */}
+        {/* ==== SWAP ==== */}
         <div className="flex justify-center -my-2 z-10">
           <button
             onClick={() => {
@@ -153,7 +172,7 @@ export default function BridgePage() {
           </button>
         </div>
 
-        {/* ==== TO SECTION ==== */}
+        {/* ==== TO ==== */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">To</label>
           <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
@@ -168,87 +187,78 @@ export default function BridgePage() {
           </div>
         </div>
 
-        {/* ==== TABS ==== */}
-        {/*
-        <div className="flex bg-purple-50 rounded-xl p-1">
-          {(['bridge', 'swap'] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={clsx(
-                'flex-1 py-2 rounded-lg text-sm font-medium capitalize transition-all',
-                activeTab === tab
-                  ? 'bg-white text-purple-700 shadow-sm'
-                  : 'text-purple-600 hover:text-purple-700'
-              )}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-        */
-}
-
-        {/* ==== BEST ROUTE DISPLAY ==== */}
-        {loading ? (
-          <div className="text-center text-sm text-gray-500">Finding best route...</div>
-        ) : bestRoute ? (
-          <div className="space-y-3 text-sm bg-gradient-to-r from-emerald-50 to-teal-50 p-4 rounded-xl border border-emerald-200">
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600 flex items-center gap-1">
-                <Zap className="w-4 h-4 text-emerald-600" />
-                Bridge
-              </span>
-              <span className="font-semibold text-emerald-700">{bestRoute.bridge}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600 flex items-center gap-1">
-                <DollarSign className="w-4 h-4 text-emerald-600" />
-                Est. Gas
-              </span>
-              <span className="font-medium">${bestRoute.estimatedGasUSD.toFixed(4)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600 flex items-center gap-1">
-                <Clock className="w-4 h-4 text-emerald-600" />
-                Est. Time
-              </span>
-              <span className="font-medium">
-                {bestRoute.estimatedTimeSeconds < 60
-                  ? `${bestRoute.estimatedTimeSeconds.toFixed(1)}s`
-                  : `${(bestRoute.estimatedTimeSeconds / 60).toFixed(1)} min`}
-              </span>
-            </div>
-            <div className="text-xs text-emerald-600 font-medium mt-2">
-              Best route: Fastest + Cheapest
-            </div>
+        {/* ==== SPEED SLIDER ==== */}
+        <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1 text-sm text-gray-600">
+              <Gauge className="w-4 h-4 text-purple-600" />
+              Transaction Speed
+            </span>
+            <span className="text-sm font-medium text-purple-700">
+              {speedPreference < 33
+                ? 'Cheapest'
+                : speedPreference < 66
+                ? 'Balanced'
+                : 'Fastest'}
+            </span>
           </div>
-        ) : amount && Number(amount) > 0 ? (
-          <div className="text-center text-sm text-red-500">No routes available</div>
-        ) : null}
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="1"
+            value={speedPreference}
+            onChange={(e) => setSpeedPreference(Number(e.target.value))}
+            className="w-full accent-purple-600 cursor-pointer"
+          />
+        </div>
 
-        {/* ==== ACTION BUTTONS ==== */}
+        {/* ==== LIVE ESTIMATES ==== */}
+        <div className="space-y-3 text-sm bg-gradient-to-r from-emerald-50 to-teal-50 p-4 rounded-xl border border-emerald-200 transition-all duration-300">
+          <div className="flex items-center justify-between">
+            <span className="text-gray-600 flex items-center gap-1">
+              <Zap className="w-4 h-4 text-emerald-600" />
+              Bridge
+            </span>
+            <span className="font-semibold text-emerald-700">{bridgeName}</span>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-gray-600 flex items-center gap-1">
+              <DollarSign className="w-4 h-4 text-emerald-600" />
+              Est. Gas
+            </span>
+            <span className="font-medium">${estGas.toFixed(4)}</span>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-gray-600 flex items-center gap-1">
+              <Clock className="w-4 h-4 text-emerald-600" />
+              Est. Time
+            </span>
+            <span className="font-medium">{estTime.toFixed(1)} min</span>
+          </div>
+
+          <div className="text-xs text-emerald-600 font-medium mt-2">
+            Adjusted for speed preference ({speedPreference}% fast)
+          </div>
+        </div>
+
+        {/* ==== ACTION ==== */}
         <div className="space-y-2">
           <button
             onClick={handleBridge}
-            disabled={!isConnected || !amount || !bestRoute || loading}
+            disabled={!isConnected || !amount || loading}
             className={clsx(
               'w-full py-4 font-semibold rounded-2xl transition-all flex items-center justify-center gap-2',
-              isConnected && amount && bestRoute && !loading
+              isConnected && amount && !loading
                 ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             )}
           >
-            {loading ? (
-              <>Finding Route...</>
-            ) : activeTab === 'bridge' ? (
-              'Bridge Now'
-            ) : (
-              'Transfer Now'
-            )}
+            {loading ? 'Finding Route...' : 'Bridge Now'}
           </button>
 
-          {/* Debug Button */}
           {process.env.NODE_ENV === 'development' && (
             <button
               onClick={handleDebugLog}
