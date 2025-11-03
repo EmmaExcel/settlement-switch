@@ -1,0 +1,4 @@
+settlement-switch/
+*.md
+.git/
+.gitignore
