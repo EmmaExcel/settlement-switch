@@ -54,7 +54,7 @@ export default function ChainSelector({
         onClick={() => setIsOpen(!isOpen)}
         disabled={disabled}
         className={clsx(
-          "flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all duration-200 min-w-[200px]",
+          "flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-xl border-2 transition-all duration-200 w-full sm:min-w-[200px]",
           disabled
             ? "bg-gray-100 border-gray-200 cursor-not-allowed opacity-60"
             : "bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500"
@@ -62,35 +62,35 @@ export default function ChainSelector({
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >
-        <div className="flex items-center gap-2 flex-1">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
           {selectedOption ? (
             <>
               <img 
                 src={selectedOption.iconUrl} 
                 alt={selectedOption.name} 
-                className="w-6 h-6 rounded-full" 
+                className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex-shrink-0" 
               />
-              <div className="text-left">
-                <div className="font-medium text-sm text-gray-900">{selectedOption.name}</div>
-                <div className="text-xs text-gray-500">Chain ID: {selectedOption.chainId}</div>
+              <div className="text-left min-w-0 flex-1">
+                <div className="font-medium text-xs sm:text-sm text-gray-900 truncate">{selectedOption.name}</div>
+                <div className="text-xs text-gray-500 hidden sm:block">Chain ID: {selectedOption.chainId}</div>
               </div>
             </>
           ) : (
-            <div className="text-left">
-              <div className="font-medium text-sm text-gray-900">Select Chain</div>
-              <div className="text-xs text-gray-500">Choose network</div>
+            <div className="text-left min-w-0 flex-1">
+              <div className="font-medium text-xs sm:text-sm text-gray-900">Select Chain</div>
+              <div className="text-xs text-gray-500 hidden sm:block">Choose network</div>
             </div>
           )}
         </div>
         
-        <ChevronDown className={clsx("w-4 h-4 transition-transform text-gray-400", isOpen ? 'rotate-180' : '')} />
+        <ChevronDown className={clsx("w-3 h-3 sm:w-4 sm:h-4 transition-transform text-gray-400 flex-shrink-0", isOpen ? 'rotate-180' : '')} />
       </button>
 
       {isOpen && !disabled && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
           <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
-            <div className="py-2">
+            <div className="py-1 sm:py-2">
               {CHAIN_OPTIONS.map((option) => {
                 const isSelected = option.key === selectedChain;
                 
@@ -99,7 +99,7 @@ export default function ChainSelector({
                     key={option.key}
                     onClick={() => handleChainSelect(option.key)}
                     className={clsx(
-                      "w-full flex items-center gap-3 px-4 py-3 text-left transition-colors",
+                      "w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 text-left transition-colors",
                       isSelected 
                         ? "bg-purple-100 text-black-700" 
                         : "hover:bg-gray-50 text-gray-900"
@@ -108,14 +108,14 @@ export default function ChainSelector({
                     <img 
                       src={option.iconUrl} 
                       alt={option.name} 
-                      className="w-6 h-6 rounded-full" 
+                      className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex-shrink-0" 
                     />
-                    <div className="flex-1">
-                      <div className="font-medium text-sm">{option.name}</div>
-                      <div className="text-xs text-gray-500">Chain ID: {option.chainId}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-xs sm:text-sm truncate">{option.name}</div>
+                      <div className="text-xs text-gray-500 hidden sm:block">Chain ID: {option.chainId}</div>
                     </div>
                     {isSelected && (
-                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
                     )}
                   </button>
                 );

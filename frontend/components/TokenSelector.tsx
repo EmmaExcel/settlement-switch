@@ -138,9 +138,9 @@ export default function TokenSelector({
 
   if (availableTokens.length === 0) {
     return (
-      <div className={clsx("flex items-center gap-2 px-4 py-3 rounded-xl border-2 border-gray-200 bg-gray-50", className)}>
-        <AlertCircle className="w-5 h-5 text-gray-400" />
-        <span className="text-sm text-gray-500">No tokens available on this network</span>
+      <div className={clsx("flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-3 rounded-xl border-2 border-gray-200 bg-gray-50", className)}>
+        <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 flex-shrink-0" />
+        <span className="text-xs sm:text-sm text-gray-500">No tokens available on this network</span>
       </div>
     );
   }
@@ -151,7 +151,7 @@ export default function TokenSelector({
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
         className={clsx(
-          "w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all duration-200",
+          "w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-xl border-2 transition-all duration-200",
           disabled 
             ? "bg-gray-100 border-gray-200 cursor-not-allowed opacity-60"
             : "bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500"
@@ -164,44 +164,44 @@ export default function TokenSelector({
             <img 
               src={selectedToken.iconUrl} 
               alt={selectedToken.symbol} 
-              className="w-8 h-8 rounded-full" 
+              className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex-shrink-0" 
             />
-            <div className="flex-1 text-left">
-              <div className="font-semibold text-gray-900">{selectedToken.symbol}</div>
-              <div className="text-sm text-gray-500">{selectedToken.name}</div>
+            <div className="flex-1 text-left min-w-0">
+              <div className="font-semibold text-sm sm:text-base text-gray-900 truncate">{selectedToken.symbol}</div>
+              <div className="text-xs sm:text-sm text-gray-500 truncate hidden sm:block">{selectedToken.name}</div>
             </div>
-            <div className="text-right">
+            <div className="text-right flex-shrink-0">
               {isConnected && address ? (
                 balanceLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                  <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin text-gray-400" />
                 ) : balance ? (
                   <>
-                    <div className="text-sm font-medium text-gray-900">
+                    <div className="text-xs sm:text-sm font-medium text-gray-900">
                       {formatBalance(balance.value, balance.decimals)}
                     </div>
-                    <div className="text-xs text-gray-500">Balance</div>
+                    <div className="text-xs text-gray-500 hidden sm:block">Balance</div>
                   </>
                 ) : (
-                  <div className="text-sm text-gray-500">0</div>
+                  <div className="text-xs sm:text-sm text-gray-500">0</div>
                 )
               ) : (
-                <div className="text-sm text-gray-400">--</div>
+                <div className="text-xs sm:text-sm text-gray-400">--</div>
               )}
             </div>
           </>
         ) : (
           <>
-            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-              <span className="text-gray-400 text-sm">?</span>
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+              <span className="text-gray-400 text-xs sm:text-sm">?</span>
             </div>
-            <div className="flex-1 text-left">
-              <div className="font-medium text-gray-500">Select Token</div>
+            <div className="flex-1 text-left min-w-0">
+              <div className="font-medium text-xs sm:text-sm text-gray-500">Select Token</div>
             </div>
           </>
         )}
         
         {!disabled && (
-          <ChevronDown className={clsx("w-5 h-5 transition-transform text-gray-400", isOpen ? 'rotate-180' : '')} />
+          <ChevronDown className={clsx("w-4 h-4 sm:w-5 sm:h-5 transition-transform text-gray-400 flex-shrink-0", isOpen ? 'rotate-180' : '')} />
         )}
       </button>
 
@@ -210,15 +210,15 @@ export default function TokenSelector({
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
           <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden max-h-80">
             {/* Search */}
-            <div className="p-3 border-b border-gray-100">
+            <div className="p-2 sm:p-3 border-b border-gray-100">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Search tokens..."
                   value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500"
+                  className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-1.5 sm:py-2 border border-gray-200 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500"
                 />
               </div>
             </div>
@@ -226,7 +226,7 @@ export default function TokenSelector({
             {/* Token List */}
             <div className="max-h-60 overflow-y-auto">
               {filteredTokens.length === 0 ? (
-                <div className="p-4 text-center text-gray-500 text-sm">
+                <div className="p-3 sm:p-4 text-center text-gray-500 text-xs sm:text-sm">
                   No tokens found
                 </div>
               ) : (
@@ -289,7 +289,7 @@ function TokenOption({ token, isSelected, onClick, userAddress, isConnected }: T
     <button
       onClick={onClick}
       className={clsx(
-        "w-full flex items-center gap-3 px-4 py-3 text-left transition-colors",
+        "w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 text-left transition-colors",
         isSelected 
           ? "bg-purple-100 text-black-700" 
           : "hover:bg-gray-50 text-gray-900"
@@ -298,25 +298,25 @@ function TokenOption({ token, isSelected, onClick, userAddress, isConnected }: T
       <img 
         src={token.iconUrl} 
         alt={token.symbol} 
-        className="w-8 h-8 rounded-full" 
+        className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex-shrink-0" 
       />
-      <div className="flex-1">
-        <div className="font-semibold text-sm">{token.symbol}</div>
-        <div className="text-xs text-gray-500">{token.name}</div>
+      <div className="flex-1 min-w-0">
+        <div className="font-semibold text-xs sm:text-sm truncate">{token.symbol}</div>
+        <div className="text-xs text-gray-500 truncate hidden sm:block">{token.name}</div>
       </div>
-      <div className="text-right">
+      <div className="text-right flex-shrink-0">
         {isConnected && userAddress ? (
           isLoading ? (
-            <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+            <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin text-gray-400" />
           ) : balance ? (
-            <div className="text-sm font-medium">
+            <div className="text-xs sm:text-sm font-medium">
               {formatBalance(balance.value, balance.decimals)}
             </div>
           ) : (
-            <div className="text-sm text-gray-500">0</div>
+            <div className="text-xs sm:text-sm text-gray-500">0</div>
           )
         ) : (
-          <div className="text-sm text-gray-400">--</div>
+          <div className="text-xs sm:text-sm text-gray-400">--</div>
         )}
       </div>
     </button>

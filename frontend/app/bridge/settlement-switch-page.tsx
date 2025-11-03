@@ -309,14 +309,14 @@ export default function SettlementSwitchBridgePage() {
   const canBridge = amount && Number(amount) > 0 && selectedToken && routeOptions.length > 0 && !isSubmitting && !isNetworkChanging;
 
   return (
-    <div className="min-h-screen ">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 px-2">
             Settlement Switch Bridge
           </h1>
-          <p className="text-gray-600 max-w-2xl mx-auto">
+          <p className="text-sm sm:text-base text-gray-600 max-w-xs sm:max-w-md lg:max-w-2xl mx-auto px-4">
             Multi-bridge aggregator powered by LayerZero, Connext, and Across. 
             Find the best routes across all bridges automatically.
           </p>
@@ -325,18 +325,19 @@ export default function SettlementSwitchBridgePage() {
         {/* Network Error/Status */}
         {networkError && (
           <div className={clsx(
-            "mb-6 p-4 border rounded-lg",
+            "mb-4 sm:mb-6 p-3 sm:p-4 border rounded-lg mx-2 sm:mx-0",
             isNetworkChanging 
               ? "bg-yellow-50 border-yellow-200" 
               : "bg-red-50 border-red-200"
           )}>
             <div className="flex items-center">
               {isNetworkChanging ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-yellow-500 mr-2"></div>
+                <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-yellow-500 mr-2 flex-shrink-0"></div>
               ) : (
-                <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+                <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-red-500 mr-2 flex-shrink-0" />
               )}
               <span className={clsx(
+                "text-sm sm:text-base",
                 isNetworkChanging ? "text-yellow-700" : "text-red-700"
               )}>
                 {networkError}
@@ -346,57 +347,57 @@ export default function SettlementSwitchBridgePage() {
         )}
 
         {/* Bridge Adapters Status */}
-        <div className="mb-6 bg-white max-w-2xl mx-auto rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900">Available Bridge Adapters</h3>
-              <div className="flex items-center text-sm text-gray-500">
-                <CheckCircle className="h-4 w-4 mr-1 text-green-500" />
+        <div className="mb-4 sm:mb-6 bg-white max-w-2xl mx-auto rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl border border-gray-100 overflow-hidden mx-2 sm:mx-auto">
+          <div className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
+              <h3 className="font-semibold text-gray-900 text-base sm:text-lg">Available Bridge Adapters</h3>
+              <div className="flex items-center text-xs sm:text-sm text-gray-500">
+                <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 text-green-500" />
                 1 Active
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
               {/* LayerZero - Active */}
-              <div className="flex items-center justify-between p-3 bg-purple-200 border border-purple-300 rounded-lg">
+              <div className="flex items-center justify-between p-2 sm:p-3 bg-purple-200 border border-purple-300 rounded-lg">
                 <div className="flex items-center">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full mr-3"></div>
-                  <span className="font-medium text-black-900">LayerZero</span>
+                  <div className="w-2 h-2 bg-purple-500 rounded-full mr-2 sm:mr-3 flex-shrink-0"></div>
+                  <span className="font-medium text-black-900 text-sm sm:text-base">LayerZero</span>
                 </div>
-                <CheckCircle className="h-4 w-4 text-purple-500" />
+                <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-purple-500 flex-shrink-0" />
               </div>
               
               {/* Coming Soon bridges */}
-              <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
+              <div className="flex items-center justify-between p-2 sm:p-3 bg-gray-50 border border-gray-200 rounded-lg">
                 <div className="flex items-center">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full mr-3"></div>
-                  <span className="font-medium text-gray-600">Connext</span>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full mr-2 sm:mr-3 flex-shrink-0"></div>
+                  <span className="font-medium text-gray-600 text-sm sm:text-base">Connext</span>
                 </div>
-                <Clock className="h-4 w-4 text-gray-400" />
+                <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
               </div>
               
-              <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
+              <div className="flex items-center justify-between p-2 sm:p-3 bg-gray-50 border border-gray-200 rounded-lg sm:col-span-2 lg:col-span-1">
                 <div className="flex items-center">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full mr-3"></div>
-                  <span className="font-medium text-gray-600">Across</span>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full mr-2 sm:mr-3 flex-shrink-0"></div>
+                  <span className="font-medium text-gray-600 text-sm sm:text-base">Across</span>
                 </div>
-                <Clock className="h-4 w-4 text-gray-400" />
+                <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
               </div>
             </div>
             
-            <p className="text-sm text-gray-600 mt-4 text-center">
+            <p className="text-xs sm:text-sm text-gray-600 mt-3 sm:mt-4 text-center px-2">
               LayerZero provides fast, secure cross-chain transfers. Additional bridges launching soon.
             </p>
           </div>
         </div>
 
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-2xl mx-auto px-2 sm:px-0">
           {/* Main Bridge Card */}
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl border border-gray-100 overflow-hidden">
            
-            <div className="p-6 border-b border-gray-100">
-              <h3 className="font-semibold text-gray-900 mb-3">Routing Preference</h3>
-              <div className="flex space-x-2">
+            <div className="p-4 sm:p-6 border-b border-gray-100">
+              <h3 className="font-semibold text-gray-900 mb-3 text-base sm:text-lg">Routing Preference</h3>
+              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                 {[
                   { mode: RoutingMode.CHEAPEST, label: "Cheapest", icon: DollarSign },
                   { mode: RoutingMode.FASTEST, label: "Fastest", icon: Zap },
@@ -406,13 +407,13 @@ export default function SettlementSwitchBridgePage() {
                     key={mode}
                     onClick={() => setRoutingMode(mode)}
                     className={clsx(
-                      "flex items-center px-4 py-2 rounded-lg font-medium transition-colors",
+                      "flex items-center justify-center px-3 sm:px-4 py-2 sm:py-2 rounded-lg font-medium transition-colors text-sm sm:text-base",
                       routingMode === mode
                         ? "bg-purple-200 text-purple-700 border-2 border-purple-300"
                         : "bg-gray-50 text-gray-600 border-2 border-transparent hover:bg-gray-100"
                     )}
                   >
-                    <Icon className="h-4 w-4 mr-2" />
+                    <Icon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                     {label}
                   </button>
                 ))}
@@ -420,12 +421,12 @@ export default function SettlementSwitchBridgePage() {
             </div>
 
             {/* Bridge Form */}
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               {/* From Section */}
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">From</label>
-                  <div className="flex space-x-3">
+                  <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
 
                     <div className="flex-1">
                       <ChainSelector
@@ -443,7 +444,6 @@ export default function SettlementSwitchBridgePage() {
                       />
                     </div>
 
-
                     
                   </div>
                 </div>
@@ -457,7 +457,7 @@ export default function SettlementSwitchBridgePage() {
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="0.0"
                     disabled={isSubmitting}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-2xl font-bold"
+                    className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-lg sm:text-2xl font-bold"
                   />
                 </div>
 
@@ -468,14 +468,14 @@ export default function SettlementSwitchBridgePage() {
                     disabled={isSubmitting}
                     className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
                   >
-                    <ArrowUpDown className="h-5 w-5 text-gray-600" />
+                    <ArrowUpDown className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
                   </button>
                 </div>
 
                 {/* To Section */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">To</label>
-                  <div className="flex space-x-3">
+                  <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
                     <div className="flex-1">
                       <ChainSelector
                         selectedChain={toChain}
@@ -484,7 +484,7 @@ export default function SettlementSwitchBridgePage() {
                       />
                     </div>
                     <div className="flex-1 bg-gray-50 rounded-lg p-3 flex items-center">
-                      <span className="text-gray-600">
+                      <span className="text-gray-600 text-sm sm:text-base">
                         {selectedToken?.symbol || "Select token"}
                       </span>
                     </div>
@@ -502,7 +502,7 @@ export default function SettlementSwitchBridgePage() {
                     onChange={(e) => setToAddress(e.target.value)}
                     placeholder={address || "Enter recipient address"}
                     disabled={isSubmitting}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                   />
                 </div>
               </div>
@@ -511,12 +511,12 @@ export default function SettlementSwitchBridgePage() {
             {/* Route Options */}
             {routeOptions.length > 0 && (
               <div className="border-t border-gray-100">
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-gray-900">Available Routes</h3>
+                <div className="p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
+                    <h3 className="font-semibold text-gray-900 text-base sm:text-lg">Available Routes</h3>
                     <button
                       onClick={() => setShowRouteComparison(!showRouteComparison)}
-                      className="text-purple-600 hover:text-purple-700 text-sm font-medium"
+                      className="text-purple-600 hover:text-purple-700 text-sm font-medium self-start sm:self-auto"
                     >
                       {showRouteComparison ? "Hide Details" : "Compare Routes"}
                     </button>
@@ -530,26 +530,26 @@ export default function SettlementSwitchBridgePage() {
                           key={index}
                           onClick={() => setSelectedRouteIndex(index)}
                           className={clsx(
-                            "p-4 border rounded-lg cursor-pointer transition-colors",
+                            "p-3 sm:p-4 border rounded-lg cursor-pointer transition-colors",
                             selectedRouteIndex === index
                               ? "border-purple-500 bg-purple-100"
                               : "border-gray-200 hover:border-gray-300"
                           )}
                         >
-                          <div className="flex items-center justify-between mb-2">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-1 sm:gap-0">
                             <div className="flex items-center">
-                              <span className="font-medium text-gray-900">{option.bridgeName}</span>
+                              <span className="font-medium text-gray-900 text-sm sm:text-base">{option.bridgeName}</span>
                               {option.isRecommended && (
                                 <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
                                   Recommended
                                 </span>
                               )}
                             </div>
-                            <span className="text-sm text-gray-600">
+                            <span className="text-xs sm:text-sm text-gray-600">
                               {option.metrics.successRatePercent.toFixed(0)}% success rate
                             </span>
                           </div>
-                          <div className="grid grid-cols-3 gap-4 text-sm">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm">
                             <div>
                               <span className="text-gray-500">Cost:</span>
                               <div className="font-medium">{option.metrics.totalCostETH.toFixed(6)} ETH</div>
@@ -568,7 +568,7 @@ export default function SettlementSwitchBridgePage() {
                     </div>
                   ) : (
                     // Simple route selector
-                    <div className="flex space-x-2">
+                    <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                       {routeOptions.map((option, index) => (
                         <button
                           key={index}
@@ -580,8 +580,8 @@ export default function SettlementSwitchBridgePage() {
                               : "border-gray-200 hover:border-gray-300"
                           )}
                         >
-                          <div className="font-medium">{option.bridgeName}</div>
-                          <div className="text-sm text-gray-600">
+                          <div className="font-medium text-sm sm:text-base">{option.bridgeName}</div>
+                          <div className="text-xs sm:text-sm text-gray-600">
                             {option.metrics.totalCostETH.toFixed(6)} ETH
                           </div>
                         </button>
@@ -591,22 +591,22 @@ export default function SettlementSwitchBridgePage() {
 
                   {/* Selected Route Summary */}
                   {selectedRoute && (
-                    <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                    <div className="mt-4 p-3 sm:p-4 bg-gray-50 rounded-lg">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium text-gray-900">
+                        <span className="font-medium text-gray-900 text-sm sm:text-base">
                           Selected: {selectedRoute.bridgeName}
                         </span>
                         {selectedRoute.isRecommended && (
-                          <CheckCircle className="h-5 w-5 text-green-500" />
+                          <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
                         )}
                       </div>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
                         <div className="flex items-center">
-                          <DollarSign className="h-4 w-4 text-gray-400 mr-1" />
+                          <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 mr-1" />
                           <span>Total Cost: {selectedRoute.metrics.totalCostETH.toFixed(6)} ETH</span>
                         </div>
                         <div className="flex items-center">
-                          <Clock className="h-4 w-4 text-gray-400 mr-1" />
+                          <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 mr-1" />
                           <span>Est. Time: {selectedRoute.metrics.estimatedTimeMinutes} min</span>
                         </div>
                       </div>
@@ -618,21 +618,21 @@ export default function SettlementSwitchBridgePage() {
 
             {/* Error Display */}
             {routeError && (
-              <div className="border-t border-gray-100 p-6">
-                <div className="flex items-center p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <AlertCircle className="h-5 w-5 text-red-500 mr-2 flex-shrink-0" />
-                  <span className="text-red-700 text-sm">{routeError}</span>
+              <div className="border-t border-gray-100 p-4 sm:p-6">
+                <div className="flex items-center p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg mx-2 sm:mx-0">
+                  <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-red-500 mr-2 flex-shrink-0" />
+                  <span className="text-red-700 text-xs sm:text-sm">{routeError}</span>
                 </div>
               </div>
             )}
 
             {/* Bridge Button */}
-            <div className="border-t border-gray-100 p-6">
+            <div className="border-t border-gray-100 p-4 sm:p-6">
               <button
                 onClick={handleBridge}
                 disabled={!canBridge || isLoadingRoute}
                 className={clsx(
-                  "w-full py-4 px-6 rounded-lg font-semibold text-white transition-colors",
+                  "w-full py-3 sm:py-4 px-4 sm:px-6 rounded-lg font-semibold text-white transition-colors text-sm sm:text-base",
                   canBridge && !isLoadingRoute
                     ? "bg-purple-600 hover:bg-purple-700"
                     : "bg-gray-300 cursor-not-allowed"
@@ -651,34 +651,34 @@ export default function SettlementSwitchBridgePage() {
 
           {/* Transaction History */}
           {transactions.length > 0 && (
-            <div className="mt-6 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-              <div className="p-6 border-b border-gray-100">
+            <div className="mt-4 sm:mt-6 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden mx-2 sm:mx-0">
+              <div className="p-4 sm:p-6 border-b border-gray-100">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-gray-900">Recent Transactions</h3>
+                  <h3 className="font-semibold text-gray-900 text-base sm:text-lg">Recent Transactions</h3>
                   <button
                     onClick={() => setShowHistory(!showHistory)}
                     className="text-blue-600 hover:text-blue-700"
                   >
-                    <History className="h-5 w-5" />
+                    <History className="h-4 w-4 sm:h-5 sm:w-5" />
                   </button>
                 </div>
               </div>
               {showHistory && (
-                <div className="p-6">
+                <div className="p-4 sm:p-6">
                   <div className="space-y-3">
                     {transactions.slice(0, 5).map((tx) => (
-                      <div key={tx.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div key={tx.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gray-50 rounded-lg gap-2 sm:gap-0">
                         <div>
-                          <div className="font-medium text-gray-900">
+                          <div className="font-medium text-gray-900 text-sm sm:text-base">
                             {tx.amount} {tx.token}
                           </div>
-                          <div className="text-sm text-gray-600">
+                          <div className="text-xs sm:text-sm text-gray-600">
                             {tx.fromChain} → {tx.toChain} via {tx.bridge}
                           </div>
                         </div>
-                        <div className="text-right">
+                        <div className="text-left sm:text-right">
                           <div className={clsx(
-                            "text-sm font-medium",
+                            "text-xs sm:text-sm font-medium",
                             tx.status === 'confirmed' ? "text-green-600" :
                             tx.status === 'failed' ? "text-red-600" : "text-yellow-600"
                           )}>
