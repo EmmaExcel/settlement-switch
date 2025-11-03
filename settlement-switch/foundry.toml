@@ -1,0 +1,278 @@
+[profile.default]
+# Solidity compiler version
+solc = "0.8.24"
+
+# Source directory
+src = "src"
+
+# Test directory
+test = "test"
+
+# Script directory
+script = "script"
+
+# Output directory
+out = "out"
+
+# Library directories
+libs = ["lib"]
+
+# Remappings for dependencies
+remappings = [
+    "@openzeppelin/=lib/openzeppelin-contracts/",
+    "@chainlink/=lib/chainlink/",
+    "forge-std/=lib/forge-std/src/",
+    "ds-test/=lib/ds-test/src/"
+]
+
+# Optimizer settings
+optimizer = true
+optimizer_runs = 1000
+
+# EVM version
+evm_version = "cancun"
+
+# Bytecode hash
+bytecode_hash = "none"
+
+# Enable via IR compilation for better optimization
+via_ir = true
+
+# Gas limit for tests
+gas_limit = 30000000
+
+# Gas price for tests (in wei)
+gas_price = 20000000000
+
+# Block gas limit
+block_gas_limit = 30000000
+
+# Chain ID for local testing
+chain_id = 31337
+
+# Auto detect solc
+auto_detect_solc = false
+
+# Offline mode
+offline = false
+
+# Verbosity level (0-5)
+verbosity = 2
+
+# Enable FFI (Foreign Function Interface)
+ffi = false
+
+# Enable AST output
+ast = true
+
+# Build info
+build_info = true
+
+# Extra output
+extra_output = ["storageLayout", "metadata"]
+
+# Ignored error codes
+ignored_error_codes = [
+    1878,  # SPDX license identifier not provided
+    5574   # Contract code size exceeds 24576 bytes
+]
+
+# Libraries to link
+libraries = []
+
+# Force recompilation
+force = false
+
+# Sparse mode for faster compilation
+sparse_mode = false
+
+# Cache directory
+cache_path = "cache"
+
+# Broadcast directory for deployment logs
+broadcast = "broadcast"
+
+# Coverage settings
+[profile.default.coverage]
+# Exclude test files from coverage
+exclude = ["test/**/*", "script/**/*", "src/mocks/**/*"]
+
+# Line coverage threshold
+line_threshold = 95
+
+# Branch coverage threshold
+branch_threshold = 90
+
+# Function coverage threshold
+function_threshold = 95
+
+[profile.ci]
+# CI profile with stricter settings
+fuzz = { runs = 10000 }
+invariant = { runs = 1000, depth = 20, fail_on_revert = true }
+
+[profile.lite]
+# Lite profile for faster compilation during development
+optimizer = false
+optimizer_runs = 200
+via_ir = false
+
+[profile.production]
+# Production profile with maximum optimization
+optimizer = true
+optimizer_runs = 10000
+via_ir = true
+
+# RPC endpoints for different networks
+[rpc_endpoints]
+mainnet = "https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}"
+sepolia = "https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY}"
+arbitrum = "https://arb-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}"
+arbitrum_sepolia = "https://arb-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY}"
+polygon = "https://polygon-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}"
+mumbai = "https://polygon-mumbai.g.alchemy.com/v2/${ALCHEMY_API_KEY}"
+localhost = "http://127.0.0.1:8545"
+
+# Etherscan API keys for contract verification
+[etherscan]
+mainnet = { key = "${ETHERSCAN_API_KEY}" }
+sepolia = { key = "${ETHERSCAN_API_KEY}" }
+arbitrum = { key = "${ARBISCAN_API_KEY}" }
+arbitrum_sepolia = { key = "${ARBISCAN_API_KEY}" }
+polygon = { key = "${POLYGONSCAN_API_KEY}" }
+mumbai = { key = "${POLYGONSCAN_API_KEY}" }
+
+# Fuzz testing configuration
+[fuzz]
+# Number of fuzz runs
+runs = 1000
+
+# Maximum test failure
+max_test_rejects = 65536
+
+# Seed for reproducible fuzzing
+seed = '0x3e8'
+
+# Dictionary weight
+dictionary_weight = 40
+
+# Include storage
+include_storage = true
+
+# Include push bytes
+include_push_bytes = true
+
+# Invariant testing configuration
+[invariant]
+# Number of runs
+runs = 256
+
+# Depth of calls
+depth = 15
+
+# Fail on revert
+fail_on_revert = false
+
+# Call override
+call_override = false
+
+# Dictionary weight
+dictionary_weight = 80
+
+# Include storage
+include_storage = true
+
+# Include push bytes
+include_push_bytes = true
+
+# Shrink sequence
+shrink_sequence = true
+
+# Fmt configuration
+[fmt]
+# Line length
+line_length = 120
+
+# Tab width
+tab_width = 4
+
+# Bracket spacing
+bracket_spacing = false
+
+# Integer types
+int_types = "long"
+
+# Multiline function header
+multiline_func_header = "attributes_first"
+
+# Quote style
+quote_style = "double"
+
+# Number underscore
+number_underscore = "thousands"
+
+# Hex underscore
+hex_underscore = "remove"
+
+# Single line statement blocks
+single_line_statement_blocks = "preserve"
+
+# Override spacing
+override_spacing = false
+
+# Wrap comments
+wrap_comments = false
+
+# Ignore
+ignore = ["src/mocks/**/*"]
+
+# Doc configuration
+[doc]
+# Output directory
+out = "docs"
+
+# Title
+title = "SettlementSwitch Documentation"
+
+# Book configuration
+book = "book.toml"
+
+# Homepage
+homepage = "src/core/SettlementSwitch.sol"
+
+# Repository URL
+repository = "https://github.com/your-org/settlement-switch"
+
+# Ignore paths
+ignore = ["src/mocks/**/*", "test/**/*"]
+
+# Include libraries
+include_libraries = true
+
+# Gas reports configuration
+[profile.gas_reports]
+# Contracts to include in gas reports
+include = ["SettlementSwitch", "RouteCalculator", "BridgeRegistry", "FeeManager"]
+
+# Contracts to exclude from gas reports
+exclude = ["Mock*", "Test*"]
+
+# Sort by
+sort = "avg"
+
+# Display mode
+display_mode = "table"
+
+# Snapshot configuration
+[profile.snapshot]
+# Check snapshots
+check = true
+
+# Snapshot directory
+dir = "snapshots"
+
+# Match pattern
+match = "test/**/*.sol"
+
+# No match pattern
+no_match = "test/mocks/**/*.sol"
