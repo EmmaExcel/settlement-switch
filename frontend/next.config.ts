@@ -3,7 +3,14 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   images: {
-    domains: ['assets.coingecko.com'], // Fixed: remove https:// protocol
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'assets.coingecko.com',
+        port: '',
+        pathname: '/**',
+      },
+    ],
   },
 };
 
