@@ -208,21 +208,7 @@ export async function findMultipleRoutes(
   const tokenOutAddress = tokenOut === "ETH" ? "0x0000000000000000000000000000000000000000" : getTokenAddress(tokenOut, dstChainId);
 
   try {
-    // Get real route metrics from LayerZero adapter
-    const metrics = await publicClient.readContract({
-      address: layerZeroAdapter,
-      abi: LayerZeroAdapterAbi,
-      functionName: "getRouteMetrics",
-      args: [
-        tokenInAddress as `0x${string}`,
-        tokenOutAddress as `0x${string}`,
-        amount,
-        BigInt(srcChainId),
-        BigInt(dstChainId)
-      ]
-    });
-
-    // Check if route is supported
+    // Check if route is supported BEFORE fetching metrics to avoid revert
     const isSupported = await publicClient.readContract({
       address: layerZeroAdapter,
       abi: LayerZeroAdapterAbi,
@@ -238,6 +224,20 @@ export async function findMultipleRoutes(
     if (!isSupported) {
       throw new Error("LayerZero does not support this route");
     }
+
+    // Get real route metrics from LayerZero adapter
+    const metrics = await publicClient.readContract({
+      address: layerZeroAdapter,
+      abi: LayerZeroAdapterAbi,
+      functionName: "getRouteMetrics",
+      args: [
+        tokenInAddress as `0x${string}`,
+        tokenOutAddress as `0x${string}`,
+        amount,
+        BigInt(srcChainId),
+        BigInt(dstChainId)
+      ]
+    });
 
     // Validate that bridge fee doesn't exceed input amount
     if (metrics.bridgeFee >= amount) {
@@ -394,6 +394,22 @@ export async function bridgeWithAutoRoute(
   const tokenOutAddress = tokenOut === "ETH" ? "0x0000000000000000000000000000000000000000" : getTokenAddress(tokenOut, dstChainId);
 
   try {
+    // Ensure the route is supported BEFORE fetching metrics to avoid revert
+    const isSupported = await publicClient.readContract({
+      address: layerZeroAdapter,
+      abi: LayerZeroAdapterAbi,
+      functionName: "supportsRoute",
+      args: [
+        tokenInAddress as `0x${string}`,
+        tokenOutAddress as `0x${string}`,
+        BigInt(srcChainId),
+        BigInt(dstChainId)
+      ]
+    });
+    if (!isSupported) {
+      throw new Error("LayerZero does not support this route");
+    }
+
     // First get the route metrics to build the route object
     const metrics = await publicClient.readContract({
       address: layerZeroAdapter,

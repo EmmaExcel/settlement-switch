@@ -1,4 +1,11 @@
 export const LayerZeroAdapterAbi = [
+  // Custom errors for better revert decoding
+  { "type": "error", "name": "UnsupportedRoute", "inputs": [] },
+  { "type": "error", "name": "InsufficientLiquidity", "inputs": [] },
+  { "type": "error", "name": "TransferAmountTooLow", "inputs": [] },
+  { "type": "error", "name": "TransferAmountTooHigh", "inputs": [] },
+  { "type": "error", "name": "BridgeInactive", "inputs": [] },
+  { "type": "error", "name": "InvalidChainId", "inputs": [] },
   {
     "type": "function",
     "name": "executeBridge",
