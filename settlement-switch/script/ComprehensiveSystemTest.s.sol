@@ -172,8 +172,9 @@ contract ComprehensiveSystemTest is Script {
         IBridgeAdapter.RoutePreferences memory preferences = IBridgeAdapter.RoutePreferences({
             mode: IBridgeAdapter.RoutingMode.CHEAPEST,
             maxSlippageBps: 100,
-            maxGasPriceGwei: 50,
-            preferredBridges: new address[](0)
+            maxFeeWei: 0.05 ether,
+            maxTimeMinutes: 60,
+            allowMultiHop: false
         });
         
         try settlementSwitch.findOptimalRoute(

@@ -30,12 +30,21 @@ export const CONTRACT_ADDRESSES = {
   
   // Mainnet (Chain ID: 1) - for production
   mainnet: {
-    // Add mainnet addresses when ready for production
+    // Fill these after mainnet deploy
+    SettlementSwitch: "",
+    RouteCalculator: "",
+    BridgeRegistry: "",
+    FeeManager: "",
+    LayerZeroAdapter: ""
   },
   
   // Arbitrum One (Chain ID: 42161) - for production
   arbitrumOne: {
-    // Add Arbitrum One addresses when ready for production
+    SettlementSwitch: "0x64aD503BC93faFd92249450A4B6B7eb777e0baF9",
+    RouteCalculator: "0xB739Ba9b1002d6E6795A49804F98b802b08B759f",
+    BridgeRegistry: "0x7bEe309F8d64A086510315A12538A82887bC6c04",
+    FeeManager: "0x036D268B1892ED99f32a1a7249A12fD6f334214E",
+    LayerZeroAdapter: "0x49F7E8962d6236797d9c7554aE98B3CA2A273C28"
   }
 } as const;
 
@@ -53,6 +62,19 @@ export const SUPPORTED_TOKENS = {
     ETH: "0x0000000000000000000000000000000000000000", // Native ETH
     WETH: "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73", // Wrapped ETH on Arbitrum Sepolia
     USDC: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
+  },
+  mainnet: {
+    ETH: "0x0000000000000000000000000000000000000000",
+    WETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+    USDC: "0xA0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+    DAI: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+    USDT: "0xdAC17F958D2ee523a2206206994597C13D831ec7"
+  },
+  arbitrumOne: {
+    ETH: "0x0000000000000000000000000000000000000000",
+    WETH: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+    USDC: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+    USDT: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9"
   }
 } as const;
 
@@ -84,6 +106,34 @@ export const CHAIN_CONFIG = {
     },
     blockExplorers: {
       default: { name: "Arbiscan", url: "https://sepolia.arbiscan.io" },
+    },
+  },
+  mainnet: {
+    id: 1,
+    name: "Ethereum Mainnet",
+    network: "mainnet",
+    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+    icon: "/icons/ethereum.svg",
+    rpcUrls: {
+      default: { http: ["https://ethereum-rpc.publicnode.com"] },
+      public: { http: ["https://ethereum-rpc.publicnode.com"] },
+    },
+    blockExplorers: {
+      default: { name: "Etherscan", url: "https://etherscan.io" },
+    },
+  },
+  arbitrumOne: {
+    id: 42161,
+    name: "Arbitrum One",
+    network: "arbitrum",
+    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+    icon: "/icons/arbitrum.svg",
+    rpcUrls: {
+      default: { http: ["https://arbitrum-one.publicnode.com"] },
+      public: { http: ["https://arbitrum-one.publicnode.com"] },
+    },
+    blockExplorers: {
+      default: { name: "Arbiscan", url: "https://arbiscan.io" },
     },
   }
 } as const;

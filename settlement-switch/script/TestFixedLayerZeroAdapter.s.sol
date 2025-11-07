@@ -9,7 +9,7 @@ contract TestFixedLayerZeroAdapter is Script {
     LayerZeroAdapter public adapter;
     
     // New deployed adapter address with corrected endpoint IDs
-    address constant FIXED_ADAPTER = 0x78bf06da0b3149944bca88a77e019fdd61ba50cf;
+    address payable constant FIXED_ADAPTER = payable(0x78Bf06Da0B3149944BCa88A77E019FdD61Ba50CF);
     
     // Test addresses
     address constant ETH_ADDRESS = address(0);
@@ -23,7 +23,7 @@ contract TestFixedLayerZeroAdapter is Script {
         adapter = LayerZeroAdapter(FIXED_ADAPTER);
         
         console.log("Testing Fixed LayerZero Adapter at:", FIXED_ADAPTER);
-        console.log("=".repeat(50));
+        console.log("==================================================");
         
         // Test 1: Check if adapter supports the route
         testSupportsRoute();
@@ -34,11 +34,11 @@ contract TestFixedLayerZeroAdapter is Script {
         // Test 3: Check adapter configuration
         testAdapterConfig();
         
-        console.log("=".repeat(50));
+        console.log("==================================================");
         console.log("All tests completed!");
     }
     
-    function testSupportsRoute() external view {
+    function testSupportsRoute() public view {
         console.log("Test 1: Checking route support...");
         
         // Test ETH route from Sepolia to Arbitrum Sepolia
@@ -62,13 +62,13 @@ contract TestFixedLayerZeroAdapter is Script {
         console.log("WETH Sepolia -> Arbitrum Sepolia supported:", supportsWETH);
         
         if (supportsETH && supportsWETH) {
-            console.log("✅ Route support test PASSED");
+            console.log("Route support test PASSED");
         } else {
-            console.log("❌ Route support test FAILED");
+            console.log("Route support test FAILED");
         }
     }
     
-    function testEndpointMappings() external view {
+    function testEndpointMappings() public view {
         console.log("\nTest 2: Checking endpoint ID mappings...");
         
         // Check Sepolia mapping (should be 40161)
@@ -80,22 +80,29 @@ contract TestFixedLayerZeroAdapter is Script {
         console.log("Arbitrum Sepolia Chain ID", ARBITRUM_SEPOLIA_CHAIN_ID, "-> LayerZero Endpoint:", arbSepoliaEndpoint);
         
         if (sepoliaEndpoint == 40161 && arbSepoliaEndpoint == 40231) {
-            console.log("✅ Endpoint mapping test PASSED");
+            console.log("Endpoint mapping test PASSED");
         } else {
-            console.log("❌ Endpoint mapping test FAILED");
+            console.log("Endpoint mapping test FAILED");
             console.log("Expected: Sepolia=40161, Arbitrum Sepolia=40231");
         }
     }
     
-    function testAdapterConfig() external view {
+    function testAdapterConfig() public view {
         console.log("\nTest 3: Checking adapter configuration...");
         
-        // Check if adapter is active
-        bool isActive = adapter.isActive();
+        // Check if adapter is active via config
+        (
+            ,
+            ,
+            ,
+            ,
+            ,
+            bool isActive
+        ) = adapter.config();
         console.log("Adapter is active:", isActive);
         
         // Check adapter name
-        string memory name = adapter.getAdapterName();
+        string memory name = adapter.getBridgeName();
         console.log("Adapter name:", name);
         
         // Get route metrics for a sample route
@@ -105,13 +112,13 @@ contract TestFixedLayerZeroAdapter is Script {
             1 ether,
             SEPOLIA_CHAIN_ID,
             ARBITRUM_SEPOLIA_CHAIN_ID
-        ) returns (uint256 estimatedGas, uint256 bridgeFee) {
+        ) returns (IBridgeAdapter.RouteMetrics memory metrics) {
             console.log("Sample route metrics:");
-            console.log("  Estimated gas:", estimatedGas);
-            console.log("  Bridge fee:", bridgeFee);
-            console.log("✅ Route metrics test PASSED");
+            console.log("  Estimated gas:", metrics.estimatedGasCost);
+            console.log("  Bridge fee:", metrics.bridgeFee);
+            console.log("Route metrics test PASSED");
         } catch {
-            console.log("❌ Route metrics test FAILED");
+            console.log("Route metrics test FAILED");
         }
     }
 }

@@ -31,11 +31,12 @@ interface Token {
   chainId: number;
 }
 
-type Chain = "sepolia" | "arbitrumSepolia";
+type Chain = "sepolia" | "arbitrumSepolia" | "arbitrumOne";
 
 const CHAIN_ID: Record<Chain, number> = {
   sepolia: 11155111,
   arbitrumSepolia: 421614,
+  arbitrumOne: 42161,
 };
 
 interface Route {
@@ -91,13 +92,17 @@ export default function EnhancedBridgePage() {
   // Network validation
   useEffect(() => {
     if (isConnected && chainId) {
-      const supportedChains = [CHAIN_ID.sepolia, CHAIN_ID.arbitrumSepolia];
+      const supportedChains = [CHAIN_ID.sepolia, CHAIN_ID.arbitrumSepolia, CHAIN_ID.arbitrumOne];
       if (!supportedChains.includes(chainId)) {
-        setNetworkError(`Unsupported network. Please switch to Sepolia or Arbitrum Sepolia.`);
+        setNetworkError(`Unsupported network. Please switch to Sepolia, Arbitrum Sepolia, or Arbitrum One.`);
       } else {
         setNetworkError(null);
-        // Auto-update fromChain based on current network
-        const currentChain = chainId === CHAIN_ID.sepolia ? "sepolia" : "arbitrumSepolia";
+        const currentChain =
+          chainId === CHAIN_ID.sepolia
+            ? "sepolia"
+            : chainId === CHAIN_ID.arbitrumSepolia
+            ? "arbitrumSepolia"
+            : "arbitrumOne";
         if (fromChain !== currentChain) {
           setFromChain(currentChain);
         }
@@ -557,7 +562,7 @@ export default function EnhancedBridgePage() {
         {/* Header */}
         <div className="text-center py-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Token Bridge</h1>
-          <p className="text-gray-600">Seamlessly bridge tokens between Ethereum Sepolia and Arbitrum Sepolia</p>
+          <p className="text-gray-600">Seamlessly bridge tokens between supported networks</p>
         </div>
 
         {/* Network Status */}

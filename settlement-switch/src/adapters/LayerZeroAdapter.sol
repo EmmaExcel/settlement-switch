@@ -2,6 +2,9 @@
 pragma solidity ^0.8.24;
 
 import "../interfaces/IBridgeAdapter.sol";
+import "../interfaces/stargate/IStargateRouter.sol";
+import "../interfaces/stargate/IStargateRouterETH.sol";
+import "../interfaces/layerzero/ILayerZeroEndpoint.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -14,9 +17,14 @@ contract LayerZeroAdapter is IBridgeAdapter, Ownable, ReentrancyGuard {
     mapping(uint256 => uint16) public chainIdToLzChainId;
     mapping(uint16 => uint256) public lzChainIdToChainId;
 
-    /// @notice Supported token pools
+    /// @notice Supported token pools and Stargate configuration
     mapping(address => mapping(uint256 => bool)) public supportedTokens;
     mapping(address => mapping(uint256 => uint256)) public tokenLiquidity;
+    mapping(address => mapping(uint256 => uint256)) public stargatePoolIds; // token => chainId => poolId
+
+    IStargateRouter public stargateRouter;
+    IStargateRouterETH public stargateRouterETH;
+    ILayerZeroEndpoint public lzEndpoint;
 
     /// @notice Transfer tracking
     mapping(bytes32 => Transfer) public transfers;
@@ -141,8 +149,13 @@ contract LayerZeroAdapter is IBridgeAdapter, Ownable, ReentrancyGuard {
             return false;
         }
 
-        // Check if token is supported on both chains
-        return supportedTokens[tokenIn][srcChainId] && supportedTokens[tokenOut][dstChainId];
+        // Check if token is supported on both chains and pool IDs are configured
+        bool tokensOk = supportedTokens[tokenIn][srcChainId] && supportedTokens[tokenOut][dstChainId];
+        bool poolsOk = (stargatePoolIds[tokenIn][srcChainId] != 0) && (stargatePoolIds[tokenOut][dstChainId] != 0);
+        bool endpointsOk = (address(lzEndpoint) != address(0)) && (
+            (address(stargateRouter) != address(0)) || (address(stargateRouterETH) != address(0))
+        );
+        return tokensOk && poolsOk && endpointsOk;
     }
 
     function getRouteMetrics(
@@ -156,9 +169,12 @@ contract LayerZeroAdapter is IBridgeAdapter, Ownable, ReentrancyGuard {
             revert UnsupportedRoute();
         }
 
-        // Calculate fees
-        uint256 bridgeFee = config.baseFee + (amount * config.feePercentage / 10000);
-        uint256 estimatedGas = _estimateGasCost(srcChainId, dstChainId);
+        // Estimate LayerZero fee via endpoint (no payload)
+        uint16 dstLz = chainIdToLzChainId[dstChainId];
+        bytes memory emptyPayload = bytes("");
+        (uint256 nativeFee,) = lzEndpoint.estimateFees(dstLz, address(this), emptyPayload, false, bytes(""));
+        uint256 bridgeFee = nativeFee + (amount * config.feePercentage / 10000);
+        uint256 estimatedGas = bridgeFee; // treat fee as total cost for display
         
         // Get available liquidity
         uint256 liquidity = tokenLiquidity[tokenIn][dstChainId];
@@ -208,16 +224,10 @@ contract LayerZeroAdapter is IBridgeAdapter, Ownable, ReentrancyGuard {
             route.dstChainId, block.timestamp, block.number
         ));
 
-        // Handle token transfer
+        // Handle token transfer into adapter if ERC20
         if (route.tokenIn != address(0)) {
             IERC20(route.tokenIn).safeTransferFrom(msg.sender, address(this), route.amountIn);
-        } else {
-            require(msg.value >= route.amountIn, "Insufficient ETH");
         }
-
-        // Update liquidity (simulate cross-chain transfer)
-        tokenLiquidity[route.tokenIn][route.srcChainId] += route.amountIn;
-        tokenLiquidity[route.tokenOut][route.dstChainId] -= route.amountIn;
 
         // Create transfer record
         transfers[transferId] = Transfer({
@@ -234,8 +244,44 @@ contract LayerZeroAdapter is IBridgeAdapter, Ownable, ReentrancyGuard {
         totalTransfers++;
         totalVolume += route.amountIn;
 
-        // Simulate async completion (in real implementation, this would be handled by LayerZero)
-        _simulateAsyncCompletion(transferId);
+        // Execute LayerZero Stargate swap (production)
+        uint16 dstLzChain = chainIdToLzChainId[route.dstChainId];
+        uint256 srcPoolId = stargatePoolIds[route.tokenIn][route.srcChainId];
+        uint256 dstPoolId = stargatePoolIds[route.tokenOut][route.dstChainId];
+
+        IStargateRouter.LzTxObj memory lzTxParams = IStargateRouter.LzTxObj({
+            dstGasForCall: 200000,
+            dstNativeAmount: 0,
+            dstNativeAddr: abi.encodePacked(recipient)
+        });
+
+        bytes memory toAddress = abi.encodePacked(recipient);
+
+        if (route.tokenIn == address(0)) {
+            // Native ETH path via RouterETH
+            stargateRouterETH.swapETH{value: msg.value}(
+                dstLzChain,
+                msg.sender,
+                toAddress,
+                route.amountIn,
+                0,
+                lzTxParams
+            );
+        } else {
+            // ERC20 path via Router
+            IERC20(route.tokenIn).approve(address(stargateRouter), route.amountIn);
+            stargateRouter.swap{value: msg.value}(
+                dstLzChain,
+                srcPoolId,
+                dstPoolId,
+                msg.sender,
+                route.amountIn,
+                0, // minAmountLD; set conservatively
+                lzTxParams,
+                toAddress,
+                bytes("")
+            );
+        }
 
         emit TransferInitiated(transferId, msg.sender, recipient, route);
         emit TransferExecuted(transferId, msg.sender, route.amountIn);
@@ -304,30 +350,29 @@ contract LayerZeroAdapter is IBridgeAdapter, Ownable, ReentrancyGuard {
         return 0.003 ether; // Default
     }
 
-    function _simulateAsyncCompletion(bytes32 transferId) internal {
-        // In a real implementation, this would be handled by LayerZero relayers
-        // For testing, we'll mark as completed after a delay
-        transfers[transferId].status = TransferStatus.CONFIRMED;
-        
-        // Simulate 95% success rate
-        bool success = (uint256(keccak256(abi.encodePacked(transferId, block.timestamp))) % 100) < 95;
-        
-        if (success) {
-            transfers[transferId].status = TransferStatus.COMPLETED;
-            transfers[transferId].completedAt = block.timestamp + config.avgCompletionTime;
-            successfulTransfers++;
-            emit TransferCompleted(transferId, transfers[transferId].route.amountOut, 0, config.avgCompletionTime);
-        } else {
-            transfers[transferId].status = TransferStatus.FAILED;
-            emit TransferFailed(transferId, "Simulated failure");
-        }
-    }
+    function _simulateAsyncCompletion(bytes32 /*transferId*/) internal pure {}
 
     // Admin functions
 
     function updateConfig(BridgeConfig memory newConfig) external onlyOwner {
         config = newConfig;
         emit ConfigUpdated(newConfig);
+    }
+
+    function setStargateRouter(address router) external onlyOwner {
+        stargateRouter = IStargateRouter(router);
+    }
+
+    function setLayerZeroEndpoint(address endpointAddr) external onlyOwner {
+        lzEndpoint = ILayerZeroEndpoint(endpointAddr);
+    }
+
+    function setPoolId(address token, uint256 chainId, uint256 poolId) external onlyOwner {
+        stargatePoolIds[token][chainId] = poolId;
+    }
+
+    function setStargateRouterETH(address routerETH) external onlyOwner {
+        stargateRouterETH = IStargateRouterETH(routerETH);
     }
 
     function addSupportedToken(

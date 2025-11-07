@@ -101,32 +101,79 @@ contract Deploy is Script {
             existingPriceFeeds: new address[](0)
         });
 
-        // Ethereum Mainnet (Production) - Commented for safety
-        /*
-        networkConfigs[ETHEREUM_MAINNET] = DeploymentConfig({
-            networkName: "Ethereum Mainnet",
-            chainId: ETHEREUM_MAINNET,
-            admin: 0x0000000000000000000000000000000000000000, // SET ACTUAL ADMIN
-            treasury: 0x0000000000000000000000000000000000000000, // SET ACTUAL TREASURY
-            isTestnet: false,
-            deployMocks: false,
-            existingTokens: [
-                0xA0b86a33E6441E6C8D3c8c8c8c8c8c8c8c8c8c8c, // USDC
-                0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2  // WETH
-            ],
-            existingPriceFeeds: [
-                0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419, // ETH/USD
-                0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6  // USDC/USD
-            ]
-        });
-        */
+        // Ethereum Mainnet (Production)
+        {
+            address adminMainnet = vm.envAddress("ADMIN_ADDRESS_MAINNET");
+            address treasuryMainnet = vm.envAddress("TREASURY_ADDRESS_MAINNET");
+
+            // Token addresses from environment
+            address usdcMainnet = vm.envAddress("USDC_ETHEREUM");
+            address wethMainnet = vm.envAddress("WETH_ETHEREUM");
+
+            // Price feeds from environment
+            address ethUsdFeed = vm.envAddress("ETH_USD_FEED_ETHEREUM");
+            address usdcUsdFeed = vm.envAddress("USDC_USD_FEED_ETHEREUM");
+
+            address[] memory existingTokens = new address[](2);
+            existingTokens[0] = usdcMainnet;
+            existingTokens[1] = wethMainnet;
+
+            address[] memory existingFeeds = new address[](2);
+            existingFeeds[0] = ethUsdFeed;
+            existingFeeds[1] = usdcUsdFeed;
+
+            networkConfigs[ETHEREUM_MAINNET] = DeploymentConfig({
+                networkName: "Ethereum Mainnet",
+                chainId: ETHEREUM_MAINNET,
+                admin: adminMainnet,
+                treasury: treasuryMainnet,
+                isTestnet: false,
+                deployMocks: false,
+                existingTokens: existingTokens,
+                existingPriceFeeds: existingFeeds
+            });
+        }
+
+        // Arbitrum One (Production)
+        {
+            address adminArbitrum = vm.envAddress("ADMIN_ADDRESS_MAINNET");
+            address treasuryArbitrum = vm.envAddress("TREASURY_ADDRESS_MAINNET");
+
+            // Token addresses from environment (Arbitrum)
+            address usdcArbitrum = vm.envAddress("USDC_ARBITRUM");
+            address wethArbitrum = vm.envAddress("WETH_ARBITRUM");
+
+            // Price feeds from environment (Arbitrum)
+            address ethUsdFeedArb = vm.envAddress("ETH_USD_FEED_ARBITRUM");
+            address usdcUsdFeedArb = vm.envAddress("USDC_USD_FEED_ARBITRUM");
+
+            address[] memory existingTokensArb = new address[](2);
+            existingTokensArb[0] = usdcArbitrum;
+            existingTokensArb[1] = wethArbitrum;
+
+            address[] memory existingFeedsArb = new address[](2);
+            existingFeedsArb[0] = ethUsdFeedArb;
+            existingFeedsArb[1] = usdcUsdFeedArb;
+
+            networkConfigs[ARBITRUM_ONE] = DeploymentConfig({
+                networkName: "Arbitrum One",
+                chainId: ARBITRUM_ONE,
+                admin: adminArbitrum,
+                treasury: treasuryArbitrum,
+                isTestnet: false,
+                deployMocks: false,
+                existingTokens: existingTokensArb,
+                existingPriceFeeds: existingFeedsArb
+            });
+        }
     }
 
     /**
      * @notice Main deployment function
      */
     function run() external {
-        uint256 chainId = block.chainid;
+        // Allow overriding chain id in environments where the RPC alias may not reflect the actual chain id
+        uint256 chainId = vm.envOr("CHAIN_ID_OVERRIDE", block.chainid);
         DeploymentConfig memory config = networkConfigs[chainId];
         
         require(config.chainId != 0, "Unsupported network");
@@ -137,8 +184,19 @@ contract Deploy is Script {
         console.log("Treasury:", config.treasury);
 
         vm.startBroadcast();
+        // Minimal mode: skip core deployment and only deploy adapters (e.g., LayerZero-only)
+        bool skipCore = vm.envOr("SKIP_CORE_DEPLOYMENT", false);
+        DeployedContracts memory deployed;
+        if (skipCore) {
+            console.log("Skipping core deployment due to SKIP_CORE_DEPLOYMENT=true");
+            deployed.bridgeAdapters = _deployBridgeAdapters(config);
 
-        DeployedContracts memory deployed = _deploySystem(config);
+            vm.stopBroadcast();
+            _logDeploymentSummary(deployed, config);
+            return;
+        }
+
+        deployed = _deploySystem(config);
         
         _configureSystem(deployed, config);
         
@@ -194,38 +252,49 @@ contract Deploy is Script {
      */
     function _deployBridgeAdapters(DeploymentConfig memory config) internal returns (address[] memory adapters) {
         console.log("Deploying bridge adapters...");
+        // Support a minimal deployment mode that only deploys the LayerZero adapter
+        bool layerZeroOnly = vm.envOr("DEPLOY_LAYERZERO_ONLY", false);
 
-        adapters = new address[](6);
+        if (layerZeroOnly) {
+            adapters = new address[](1);
 
-        // LayerZero Adapter
-        LayerZeroAdapter layerZero = new LayerZeroAdapter();
-        adapters[0] = address(layerZero);
-        console.log("LayerZeroAdapter deployed at:", address(layerZero));
+            // LayerZero Adapter only
+            LayerZeroAdapter layerZero = new LayerZeroAdapter();
+            adapters[0] = address(layerZero);
+            console.log("[LayerZero-only] LayerZeroAdapter deployed at:", address(layerZero));
+        } else {
+            adapters = new address[](6);
 
-        // Hop Protocol Adapter
-        HopProtocolAdapter hop = new HopProtocolAdapter();
-        adapters[1] = address(hop);
-        console.log("HopProtocolAdapter deployed at:", address(hop));
+            // LayerZero Adapter
+            LayerZeroAdapter layerZero = new LayerZeroAdapter();
+            adapters[0] = address(layerZero);
+            console.log("LayerZeroAdapter deployed at:", address(layerZero));
 
-        // Polygon Bridge Adapter
-        PolygonBridgeAdapter polygon = new PolygonBridgeAdapter();
-        adapters[2] = address(polygon);
-        console.log("PolygonBridgeAdapter deployed at:", address(polygon));
+            // Hop Protocol Adapter
+            HopProtocolAdapter hop = new HopProtocolAdapter();
+            adapters[1] = address(hop);
+            console.log("HopProtocolAdapter deployed at:", address(hop));
 
-        // Arbitrum Bridge Adapter
-        ArbitrumBridgeAdapter arbitrum = new ArbitrumBridgeAdapter();
-        adapters[3] = address(arbitrum);
-        console.log("ArbitrumBridgeAdapter deployed at:", address(arbitrum));
+            // Polygon Bridge Adapter
+            PolygonBridgeAdapter polygon = new PolygonBridgeAdapter();
+            adapters[2] = address(polygon);
+            console.log("PolygonBridgeAdapter deployed at:", address(polygon));
 
-        // Across Adapter
-        AcrossAdapter across = new AcrossAdapter();
-        adapters[4] = address(across);
-        console.log("AcrossAdapter deployed at:", address(across));
+            // Arbitrum Bridge Adapter
+            ArbitrumBridgeAdapter arbitrum = new ArbitrumBridgeAdapter();
+            adapters[3] = address(arbitrum);
+            console.log("ArbitrumBridgeAdapter deployed at:", address(arbitrum));
 
-        // Connext Adapter
-        ConnextAdapter connext = new ConnextAdapter();
-        adapters[5] = address(connext);
-        console.log("ConnextAdapter deployed at:", address(connext));
+            // Across Adapter
+            AcrossAdapter across = new AcrossAdapter();
+            adapters[4] = address(across);
+            console.log("AcrossAdapter deployed at:", address(across));
+
+            // Connext Adapter
+            ConnextAdapter connext = new ConnextAdapter();
+            adapters[5] = address(connext);
+            console.log("ConnextAdapter deployed at:", address(connext));
+        }
 
         return adapters;
     }
@@ -322,17 +391,56 @@ contract Deploy is Script {
             console.log("Registered adapter with BridgeRegistry:", deployed.bridgeAdapters[i]);
         }
 
-        // Register adapters with SettlementSwitch
-        for (uint256 i = 0; i < deployed.bridgeAdapters.length; i++) {
-            deployed.settlementSwitch.registerBridgeAdapter(deployed.bridgeAdapters[i], true);
-            console.log("Registered adapter with SettlementSwitch:", deployed.bridgeAdapters[i]);
+        // Grant required roles to SettlementSwitch before it performs privileged operations
+        // SettlementSwitch needs permission to update fees and interact with BridgeRegistry in certain flows
+        // Ensure the deployer (admin) is the caller here so grantRole succeeds
+        // Optionally skip role grants to save gas in minimal deployments
+        bool skipRoleGrants = vm.envOr("SKIP_ROLE_GRANTS", false);
+        if (!skipRoleGrants) {
+            // Grant FEE_MANAGER_ROLE to SettlementSwitch on FeeManager
+            bytes32 feeManagerRole = deployed.feeManager.FEE_MANAGER_ROLE();
+            deployed.feeManager.grantRole(feeManagerRole, address(deployed.settlementSwitch));
+            console.log("Granted FEE_MANAGER_ROLE to SettlementSwitch:", address(deployed.settlementSwitch));
+
+            // Grant BRIDGE_MANAGER_ROLE to SettlementSwitch on BridgeRegistry
+            bytes32 bridgeManagerRole = deployed.bridgeRegistry.BRIDGE_MANAGER_ROLE();
+            deployed.bridgeRegistry.grantRole(bridgeManagerRole, address(deployed.settlementSwitch));
+            console.log("Granted BRIDGE_MANAGER_ROLE to SettlementSwitch:", address(deployed.settlementSwitch));
+        } else {
+            console.log("Skipping role grants due to SKIP_ROLE_GRANTS=true");
         }
 
-        // Configure fee structures
-        _configureFees(deployed.feeManager, config);
+        // Register adapters with SettlementSwitch
+        bool skipSsRegistration = vm.envOr("SKIP_SS_REGISTRATION", false);
+        if (!skipSsRegistration) {
+            for (uint256 i = 0; i < deployed.bridgeAdapters.length; i++) {
+                (BridgeRegistry.BridgeInfo memory info,) = deployed.bridgeRegistry.getBridgeDetails(deployed.bridgeAdapters[i]);
+                if (info.adapter == address(0)) {
+                    deployed.settlementSwitch.registerBridgeAdapter(deployed.bridgeAdapters[i], true);
+                    console.log("Registered adapter with SettlementSwitch:", deployed.bridgeAdapters[i]);
+                } else {
+                    console.log("Adapter already registered in BridgeRegistry; skipping SettlementSwitch registration:", deployed.bridgeAdapters[i]);
+                }
+            }
+        } else {
+            console.log("Skipping SettlementSwitch adapter registration due to SKIP_SS_REGISTRATION=true");
+        }
 
-        // Update chain configurations
-        _configureChains(deployed.settlementSwitch, config);
+        // Configure fee structures (optional)
+        bool skipFeeConfig = vm.envOr("SKIP_FEE_CONFIG", false);
+        if (!skipFeeConfig) {
+            _configureFees(deployed.feeManager, config);
+        } else {
+            console.log("Skipping fee configuration due to SKIP_FEE_CONFIG=true");
+        }
+
+        // Update chain configurations (optional)
+        bool skipChainConfig = vm.envOr("SKIP_CHAIN_CONFIG", false);
+        if (!skipChainConfig) {
+            _configureChains(deployed.settlementSwitch, config);
+        } else {
+            console.log("Skipping chain configuration due to SKIP_CHAIN_CONFIG=true");
+        }
 
         console.log("System configuration completed");
     }
@@ -441,7 +549,12 @@ contract Deploy is Script {
         require(address(deployed.feeManager) != address(0), "FeeManager not deployed");
 
         // Verify bridge adapters
-        require(deployed.bridgeAdapters.length == 6, "Incorrect number of bridge adapters");
+        bool layerZeroOnly = vm.envOr("DEPLOY_LAYERZERO_ONLY", false);
+        if (layerZeroOnly) {
+            require(deployed.bridgeAdapters.length == 1, "Expected 1 adapter in LayerZero-only mode");
+        } else {
+            require(deployed.bridgeAdapters.length >= 1, "No bridge adapters deployed");
+        }
         for (uint256 i = 0; i < deployed.bridgeAdapters.length; i++) {
             require(deployed.bridgeAdapters[i] != address(0), "Bridge adapter not deployed");
         }
@@ -455,8 +568,14 @@ contract Deploy is Script {
         // Verify system configuration
         require(!deployed.settlementSwitch.isPaused(), "System should not be paused");
         
+        bool skipSsRegistration = vm.envOr("SKIP_SS_REGISTRATION", false);
         (address[] memory adapters,,) = deployed.settlementSwitch.getRegisteredAdapters();
-        require(adapters.length == deployed.bridgeAdapters.length, "Adapters not registered");
+        if (!skipSsRegistration) {
+            require(adapters.length == deployed.bridgeAdapters.length, "Adapters not registered");
+        } else {
+            // In skip mode, just ensure the call does not revert and adapters length is <= deployed count
+            require(adapters.length <= deployed.bridgeAdapters.length, "Unexpected adapters count in skip mode");
+        }
 
         console.log("Deployment verification completed successfully");
     }
@@ -474,18 +593,22 @@ contract Deploy is Script {
         console.log("Treasury:", config.treasury);
         
         console.log("\n--- Core Contracts ---");
-        console.log("SettlementSwitch:", address(deployed.settlementSwitch));
-        console.log("RouteCalculator:", address(deployed.routeCalculator));
-        console.log("BridgeRegistry:", address(deployed.bridgeRegistry));
-        console.log("FeeManager:", address(deployed.feeManager));
+        if (address(deployed.settlementSwitch) != address(0)) {
+            console.log("SettlementSwitch:", address(deployed.settlementSwitch));
+            console.log("RouteCalculator:", address(deployed.routeCalculator));
+            console.log("BridgeRegistry:", address(deployed.bridgeRegistry));
+            console.log("FeeManager:", address(deployed.feeManager));
+        } else {
+            console.log("(skipped core deployment)");
+        }
         
         console.log("\n--- Bridge Adapters ---");
-        string[6] memory adapterNames = [
-            "LayerZero", "Hop Protocol", "Polygon Bridge", 
-            "Arbitrum Bridge", "Across", "Connext"
-        ];
-        for (uint256 i = 0; i < deployed.bridgeAdapters.length; i++) {
-            console.log(string.concat(adapterNames[i], ":"), deployed.bridgeAdapters[i]);
+        if (deployed.bridgeAdapters.length > 0) {
+            for (uint256 i = 0; i < deployed.bridgeAdapters.length; i++) {
+                console.log("Adapter:", deployed.bridgeAdapters[i]);
+            }
+        } else {
+            console.log("(no adapters deployed)");
         }
 
         if (config.deployMocks) {

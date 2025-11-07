@@ -58,6 +58,10 @@ export default function TokenSelector({
         tokenAddresses = SUPPORTED_TOKENS.sepolia;
       } else if (chainId === 421614) { // Arbitrum Sepolia
         tokenAddresses = SUPPORTED_TOKENS.arbitrumSepolia;
+      } else if (chainId === 1) { // Ethereum Mainnet
+        tokenAddresses = SUPPORTED_TOKENS.mainnet;
+      } else if (chainId === 42161) { // Arbitrum One
+        tokenAddresses = SUPPORTED_TOKENS.arbitrumOne;
       }
 
       return Object.entries(tokenAddresses).map(([symbol, address]) => ({

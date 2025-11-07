@@ -266,9 +266,19 @@ contract SettlementSwitch is ISettlementSwitch, AccessControl, ReentrancyGuard, 
         }
 
         // Execute bridge transfer
-        transferId = IBridgeAdapter(route.adapter).executeBridge{
-            value: route.tokenIn == address(0) ? route.amountIn : 0
-        }(route, recipient, "");
+        // Forward remaining ETH (native bridge fee and/or amount) to adapter
+        uint256 remainingEth = msg.value;
+        if (protocolFee <= remainingEth) {
+            remainingEth -= protocolFee;
+        } else {
+            remainingEth = 0; // avoid underflow if misconfigured
+        }
+
+        transferId = IBridgeAdapter(route.adapter).executeBridge{ value: remainingEth }(
+            route,
+            recipient,
+            ""
+        );
 
         // Store transfer information
         transfers[transferId] = IBridgeAdapter.Transfer({

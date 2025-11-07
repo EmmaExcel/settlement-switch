@@ -16,22 +16,31 @@ import "../src/core/FeeManager.sol";
 contract OptimizedDeploy is Script {
     
     // Use CREATE2 salt for deterministic addresses
-    bytes32 constant SALT = keccak256("SettlementSwitch_v1.0");
+    bytes32 constant SALT = keccak256("SettlementSwitch_v1.1");
     
     function run() external {
         uint256 chainId = block.chainid;
-        address admin = vm.envAddress("ADMIN_ADDRESS_TESTNET");
-        address treasury = vm.envAddress("TREASURY_ADDRESS_TESTNET");
+        address admin;
+        address treasury;
+
+        // Use mainnet admin/treasury when deploying to Arbitrum One
+        if (chainId == 42161) {
+            admin = vm.envAddress("ADMIN_ADDRESS_MAINNET");
+            treasury = vm.envAddress("TREASURY_ADDRESS_MAINNET");
+        } else {
+            admin = vm.envAddress("ADMIN_ADDRESS_TESTNET");
+            treasury = vm.envAddress("TREASURY_ADDRESS_TESTNET");
+        }
         
         console.log("Optimized deployment to chain ID:", chainId);
 
-        vm.startBroadcast();
+        // Broadcast using the configured PRIVATE_KEY to avoid Foundry default sender
+        uint256 pk = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(pk);
 
-        // Deploy with CREATE2 for gas efficiency
-        address routeCalculator = _deployWithCreate2(
-            type(RouteCalculator).creationCode,
-            SALT
-        );
+        // Deploy RouteCalculator with direct deployment so owner = EOA
+        RouteCalculator rc = new RouteCalculator();
+        address routeCalculator = address(rc);
         
         address bridgeRegistry = _deployWithCreate2(
             abi.encodePacked(

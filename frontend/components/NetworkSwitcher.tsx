@@ -28,6 +28,20 @@ const NETWORK_OPTIONS: NetworkOption[] = [
     iconUrl: 'https://assets.coingecko.com/coins/images/16547/small/arb.png',
     rpcUrl: 'https://sepolia-rollup.arbitrum.io/rpc',
     blockExplorer: 'https://sepolia.arbiscan.io'
+  },
+  {
+    chainId: 1,
+    name: 'Ethereum Mainnet',
+    iconUrl: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png',
+    rpcUrl: 'https://ethereum-rpc.publicnode.com',
+    blockExplorer: 'https://etherscan.io'
+  },
+  {
+    chainId: 42161,
+    name: 'Arbitrum One',
+    iconUrl: 'https://assets.coingecko.com/coins/images/16547/small/arb.png',
+    rpcUrl: 'https://arbitrum-one.publicnode.com',
+    blockExplorer: 'https://arbiscan.io'
   }
 ];
 

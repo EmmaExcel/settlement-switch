@@ -55,10 +55,13 @@ export type MultipleRoutesResult = {
   totalOptions: number;
 };
 
-// Get Settlement Switch contract address (always use Sepolia deployment as it's the aggregator)
+// Get Settlement Switch contract address based on current chain, with Sepolia fallback
 function getSettlementSwitchAddress(chainId: number): `0x${string}` {
-  // Settlement Switch is deployed on Sepolia and aggregates routes to all chains
-  // So we always use the Sepolia deployment regardless of current chain
+  const configured = getContractAddress("SettlementSwitch", chainId);
+  if (configured && configured.length === 42) {
+    return configured as `0x${string}`;
+  }
+  // Fallback to Sepolia aggregator if not configured for the chain yet
   return CONTRACT_ADDRESSES.sepolia.SettlementSwitch as `0x${string}`;
 }
 
@@ -69,6 +72,12 @@ function getTokenAddress(token: string, chainId: number): `0x${string}` {
   }
   if (chainId === 421614) { // Arbitrum Sepolia
     return (SUPPORTED_TOKENS.arbitrumSepolia as any)[token] as `0x${string}`;
+  }
+  if (chainId === 1) { // Ethereum Mainnet
+    return (SUPPORTED_TOKENS.mainnet as any)[token] as `0x${string}`;
+  }
+  if (chainId === 42161) { // Arbitrum One
+    return (SUPPORTED_TOKENS.arbitrumOne as any)[token] as `0x${string}`;
   }
   throw new Error(`Unsupported chain ID: ${chainId}`);
 }
@@ -189,7 +198,11 @@ export async function findMultipleRoutes(
     throw new Error(validation.error);
   }
 
-  const layerZeroAdapter = CONTRACT_ADDRESSES.sepolia.LayerZeroAdapter;
+  // Resolve LayerZero adapter for the source chain; fallback to Sepolia if not configured yet
+  const resolvedAdapter = getContractAddress("LayerZeroAdapter", srcChainId);
+  const layerZeroAdapter = (resolvedAdapter && resolvedAdapter.length === 42
+    ? resolvedAdapter
+    : CONTRACT_ADDRESSES.sepolia.LayerZeroAdapter) as `0x${string}`;
   
   const tokenInAddress = tokenIn === "ETH" ? "0x0000000000000000000000000000000000000000" : getTokenAddress(tokenIn, srcChainId);
   const tokenOutAddress = tokenOut === "ETH" ? "0x0000000000000000000000000000000000000000" : getTokenAddress(tokenOut, dstChainId);
@@ -197,7 +210,7 @@ export async function findMultipleRoutes(
   try {
     // Get real route metrics from LayerZero adapter
     const metrics = await publicClient.readContract({
-      address: layerZeroAdapter as `0x${string}`,
+      address: layerZeroAdapter,
       abi: LayerZeroAdapterAbi,
       functionName: "getRouteMetrics",
       args: [
@@ -211,7 +224,7 @@ export async function findMultipleRoutes(
 
     // Check if route is supported
     const isSupported = await publicClient.readContract({
-      address: layerZeroAdapter as `0x${string}`,
+      address: layerZeroAdapter,
       abi: LayerZeroAdapterAbi,
       functionName: "supportsRoute",
       args: [
@@ -245,7 +258,7 @@ export async function findMultipleRoutes(
     }
 
     const route: BridgeRoute = {
-      adapter: layerZeroAdapter as `0x${string}`,
+      adapter: layerZeroAdapter,
       tokenIn: tokenInAddress as `0x${string}`,
       tokenOut: tokenOutAddress as `0x${string}`,
       amountIn: amount,
@@ -371,7 +384,11 @@ export async function bridgeWithAutoRoute(
   permitData: string = "0x",
   currentChainId?: number
 ): Promise<string> {
-  const layerZeroAdapter = CONTRACT_ADDRESSES.sepolia.LayerZeroAdapter;
+  // Resolve LayerZero adapter for the source chain; fallback to Sepolia if not configured yet
+  const resolvedAdapter = getContractAddress("LayerZeroAdapter", srcChainId);
+  const layerZeroAdapter = (resolvedAdapter && resolvedAdapter.length === 42
+    ? resolvedAdapter
+    : CONTRACT_ADDRESSES.sepolia.LayerZeroAdapter) as `0x${string}`;
   
   const tokenInAddress = tokenIn === "ETH" ? "0x0000000000000000000000000000000000000000" : getTokenAddress(tokenIn, srcChainId);
   const tokenOutAddress = tokenOut === "ETH" ? "0x0000000000000000000000000000000000000000" : getTokenAddress(tokenOut, dstChainId);
@@ -379,7 +396,7 @@ export async function bridgeWithAutoRoute(
   try {
     // First get the route metrics to build the route object
     const metrics = await publicClient.readContract({
-      address: layerZeroAdapter as `0x${string}`,
+      address: layerZeroAdapter,
       abi: LayerZeroAdapterAbi,
       functionName: "getRouteMetrics",
       args: [
@@ -393,7 +410,7 @@ export async function bridgeWithAutoRoute(
 
     // Build the route object for the bridge call
     const route = {
-      adapter: layerZeroAdapter as `0x${string}`,
+      adapter: layerZeroAdapter,
       tokenIn: tokenInAddress as `0x${string}`,
       tokenOut: tokenOutAddress as `0x${string}`,
       amountIn: amount,

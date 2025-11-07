@@ -1,6 +1,6 @@
 [profile.default]
 # Solidity compiler version
-solc = "0.8.24"
+solc = "0.8.26"
 
 # Source directory
 src = "src"

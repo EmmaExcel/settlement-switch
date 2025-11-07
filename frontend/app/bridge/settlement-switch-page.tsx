@@ -38,11 +38,13 @@ interface Token {
   chainId: number;
 }
 
-type Chain = "sepolia" | "arbitrumSepolia";
+type Chain = "sepolia" | "arbitrumSepolia" | "arbitrumOne" | "mainnet";
 
 const CHAIN_ID: Record<Chain, number> = {
   sepolia: 11155111,
   arbitrumSepolia: 421614,
+  arbitrumOne: 42161,
+  mainnet: 1,
 };
 
 interface RouteOption {
@@ -112,29 +114,30 @@ export default function SettlementSwitchBridgePage() {
   // Network validation with change detection
   useEffect(() => {
     if (isConnected && chainId) {
-      const supportedChains = [CHAIN_ID.sepolia, CHAIN_ID.arbitrumSepolia];
+      const supportedChains = [CHAIN_ID.sepolia, CHAIN_ID.arbitrumSepolia, CHAIN_ID.arbitrumOne];
       
-      // Clear network changing state when network settles
       setIsNetworkChanging(false);
       
       if (!supportedChains.includes(chainId)) {
-        setNetworkError(`Unsupported network. Please switch to Sepolia or Arbitrum Sepolia.`);
+        setNetworkError(`Unsupported network. Please switch to Sepolia, Arbitrum Sepolia, or Arbitrum One.`);
       } else {
         setNetworkError(null);
-        // Only auto-update fromChain if user hasn't manually set chains
-        const currentChain = chainId === CHAIN_ID.sepolia ? "sepolia" : "arbitrumSepolia";
+        const currentChain =
+          chainId === CHAIN_ID.sepolia
+            ? "sepolia"
+            : chainId === CHAIN_ID.arbitrumSepolia
+            ? "arbitrumSepolia"
+            : "arbitrumOne";
         
-        // Only sync fromChain with wallet if it's different (removed manual change check)
         if (fromChain !== currentChain) {
           setFromChain(currentChain);
         }
       }
     } else if (isConnected && !chainId) {
-      // Network is changing
       setIsNetworkChanging(true);
       setNetworkError("Network is changing, please wait...");
     }
-  }, [chainId, isConnected]); // Removed fromChain from dependencies to prevent loops
+  }, [chainId, isConnected]);
 
   // Load registered adapters
   useEffect(() => {
