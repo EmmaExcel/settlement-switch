@@ -1,10 +1,10 @@
-# Omo - Cross-Chain Bridge Aggregator
+# Ordeal - Cross-Chain Bridge Aggregator
 
 A comprehensive cross-chain bridge aggregation platform that provides optimal routing and cost-effective bridging across multiple blockchain networks.
 
 ## 🌟 Overview
 
-Omo consists of two main components:
+Ordeal consists of two main components:
 - **Settlement Switch**: Smart contract system for cross-chain bridge aggregation
 - **Frontend**: Next.js web application for user interaction
 
@@ -43,7 +43,7 @@ Next.js application providing:
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd omo
+   cd Ordeal
    ```
 
 2. **Install dependencies**
@@ -236,7 +236,7 @@ npm run type-check
 ## 📁 Project Structure
 
 ```
-omo/
+ordeal/
 ├── README.md
 ├── .gitignore
 ├── frontend/                 # Next.js frontend application
