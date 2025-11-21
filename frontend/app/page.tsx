@@ -49,6 +49,10 @@ export default function Home(){
       icon: "https://assets.coingecko.com/coins/images/4713/small/matic-token-icon.png",
       name: "Polygon",
     },
+    {
+      icon: "https://assets.coingecko.com/coins/images/16547/small/arbitrum.jpg",
+      name: "Arbitrum",
+    },
   ]
 
 

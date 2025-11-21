@@ -109,17 +109,17 @@ export function getEstimatedMinimumBridgeAmount(): bigint {
 // Helper function to validate bridge amount before processing
 export function validateBridgeAmount(amount: bigint, tokenSymbol: string = "ETH"): { isValid: boolean; error?: string } {
   const minimumAmount = getEstimatedMinimumBridgeAmount();
-  
+
   if (amount < minimumAmount) {
     const amountEth = Number(amount) / 1e18;
     const minimumEth = Number(minimumAmount) / 1e18;
-    
+
     return {
       isValid: false,
       error: `Amount too small for bridging. Minimum recommended: ${minimumEth} ${tokenSymbol} (you entered: ${amountEth.toFixed(6)} ${tokenSymbol})`
     };
   }
-  
+
   return { isValid: true };
 }
 
@@ -136,10 +136,10 @@ export async function findOptimalRoute(
 ): Promise<BridgeRoute> {
   const chainId = currentChainId || srcChainId;
   const settlementSwitchAddress = getSettlementSwitchAddress(chainId);
-  
+
   const tokenInAddress = tokenIn === "ETH" ? "0x0000000000000000000000000000000000000000" : getTokenAddress(tokenIn, srcChainId);
   const tokenOutAddress = tokenOut === "ETH" ? "0x0000000000000000000000000000000000000000" : getTokenAddress(tokenOut, dstChainId);
-  
+
   const routePrefs = preferences || createRoutePreferences();
 
   try {
@@ -166,7 +166,7 @@ export async function findOptimalRoute(
     return route;
   } catch (error: any) {
     const errorMessage = String(error?.message || error);
-    
+
     // Provide more specific error messages
     if (errorMessage.includes('network') && errorMessage.includes('change')) {
       throw new Error("Network changed during request. Please try again.");
@@ -203,7 +203,7 @@ export async function findMultipleRoutes(
   const layerZeroAdapter = (resolvedAdapter && resolvedAdapter.length === 42
     ? resolvedAdapter
     : CONTRACT_ADDRESSES.sepolia.LayerZeroAdapter) as `0x${string}`;
-  
+
   const tokenInAddress = tokenIn === "ETH" ? "0x0000000000000000000000000000000000000000" : getTokenAddress(tokenIn, srcChainId);
   const tokenOutAddress = tokenOut === "ETH" ? "0x0000000000000000000000000000000000000000" : getTokenAddress(tokenOut, dstChainId);
 
@@ -244,7 +244,7 @@ export async function findMultipleRoutes(
       const bridgeFeeEth = Number(metrics.bridgeFee) / 1e18;
       const inputAmountEth = Number(amount) / 1e18;
       const suggestedMinimum = Number(metrics.bridgeFee * BigInt(2)) / 1e18; // 2x bridge fee as minimum
-      
+
       throw new Error(
         `Bridge amount too small. Bridge fee (${bridgeFeeEth.toFixed(6)} ETH) exceeds input amount (${inputAmountEth.toFixed(6)} ETH). ` +
         `Minimum recommended amount: ${suggestedMinimum.toFixed(6)} ETH`
@@ -285,7 +285,7 @@ export async function findMultipleRoutes(
     };
   } catch (error: any) {
     const errorMessage = String(error?.message || error);
-    
+
     // Provide more specific error messages
     if (errorMessage.includes('network') && errorMessage.includes('change')) {
       throw new Error("Network changed during request. Please try again.");
@@ -338,7 +338,7 @@ export async function executeBridge(
     // Set a conservative gas limit that stays within network constraints
     // Network cap is 16,777,216, so we use 15,000,000 to be safe
     const gasLimit = BigInt(15000000);
-    
+
     const hash = await walletClient.writeContract({
       address: settlementSwitchAddress,
       abi: SettlementSwitchAbi as any, // Type assertion for ABI compatibility
@@ -356,12 +356,12 @@ export async function executeBridge(
 
     // Wait for transaction receipt
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
-    
+
     // Extract transfer ID from logs
-    const transferInitiatedLog = receipt.logs.find(log => 
+    const transferInitiatedLog = receipt.logs.find(log =>
       log.topics[0] === "0x..." // TransferInitiated event signature
     );
-    
+
     return hash;
   } catch (error) {
     console.error("Error executing bridge:", error);
@@ -389,7 +389,7 @@ export async function bridgeWithAutoRoute(
   const layerZeroAdapter = (resolvedAdapter && resolvedAdapter.length === 42
     ? resolvedAdapter
     : CONTRACT_ADDRESSES.sepolia.LayerZeroAdapter) as `0x${string}`;
-  
+
   const tokenInAddress = tokenIn === "ETH" ? "0x0000000000000000000000000000000000000000" : getTokenAddress(tokenIn, srcChainId);
   const tokenOutAddress = tokenOut === "ETH" ? "0x0000000000000000000000000000000000000000" : getTokenAddress(tokenOut, dstChainId);
 
@@ -462,7 +462,7 @@ export async function bridgeWithAutoRoute(
     // Set a conservative gas limit that stays within network constraints
     // Network cap is 16,777,216, so we use 15,000,000 to be safe
     const gasLimit = BigInt(15000000);
-    
+
     const hash = await walletClient.writeContract({
       address: layerZeroAdapter as `0x${string}`,
       abi: LayerZeroAdapterAbi as any, // Type assertion for ABI compatibility
@@ -480,7 +480,7 @@ export async function bridgeWithAutoRoute(
 
     // Wait for transaction receipt to verify success
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
-    
+
     // Check if transaction actually succeeded
     if (receipt.status !== 'success') {
       throw new Error(`Transaction failed on-chain. Hash: ${hash}`);
@@ -489,7 +489,7 @@ export async function bridgeWithAutoRoute(
     return hash;
   } catch (error: any) {
     const errorMessage = String(error?.message || error);
-    
+
     // Handle specific errors
     if (errorMessage.includes('network') && errorMessage.includes('change')) {
       throw new Error("Network changed during transaction. Please verify your network and try again.");
@@ -535,8 +535,13 @@ export async function getRegisteredAdapters(
   currentChainId?: number
 ): Promise<{ adapters: string[]; names: string[]; enabled: boolean[] }> {
   // For now, let's focus on LayerZero only to get something working
-  const layerZeroAdapter = CONTRACT_ADDRESSES.sepolia.LayerZeroAdapter;
-  
+  const chainId = currentChainId || 11155111;
+  const layerZeroAdapter = getContractAddress("LayerZeroAdapter", chainId);
+
+  if (!layerZeroAdapter) {
+    return { adapters: [], names: [], enabled: [] };
+  }
+
   return {
     adapters: [layerZeroAdapter],
     names: ["LayerZero"],
@@ -589,18 +594,17 @@ export function formatRouteMetrics(metrics: RouteMetrics) {
 
 // Get bridge adapter name from address
 export function getBridgeAdapterName(adapterAddress: string): string {
-  const adapters = CONTRACT_ADDRESSES.sepolia;
-  
-  if (adapterAddress.toLowerCase() === adapters.LayerZeroAdapter.toLowerCase()) {
-    return "LayerZero";
+  const addr = adapterAddress.toLowerCase();
+
+  // Check all chains
+  for (const chainKey of Object.keys(CONTRACT_ADDRESSES)) {
+    const adapters = (CONTRACT_ADDRESSES as any)[chainKey];
+    if (adapters.LayerZeroAdapter && adapters.LayerZeroAdapter.toLowerCase() === addr) return "LayerZero";
+    if (adapters.ConnextAdapter && adapters.ConnextAdapter.toLowerCase() === addr) return "Connext";
+    if (adapters.AcrossAdapter && adapters.AcrossAdapter.toLowerCase() === addr) return "Across";
+    if (adapters.ArbitrumL2Bridge && adapters.ArbitrumL2Bridge.toLowerCase() === addr) return "Arbitrum Bridge";
   }
-  if (adapterAddress.toLowerCase() === adapters.ConnextAdapter.toLowerCase()) {
-    return "Connext";
-  }
-  if (adapterAddress.toLowerCase() === adapters.AcrossAdapter.toLowerCase()) {
-    return "Across";
-  }
-  
+
   return "Unknown Bridge";
 }
 

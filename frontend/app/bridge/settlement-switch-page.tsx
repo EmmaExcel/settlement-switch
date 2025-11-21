@@ -9,7 +9,8 @@ import ChainSelector from '../../components/ChainSelector';
 import NetworkSwitcher from '../../components/NetworkSwitcher';
 import TokenSelector from '../../components/TokenSelector';
 import TransactionSuccessModal from '../../components/TransactionSuccessModal';
-import { SUPPORTED_TOKENS, CHAIN_CONFIG } from '../../lib/addresses';
+import { SUPPORTED_TOKENS, CHAIN_CONFIG, CONTRACT_ADDRESSES, getContractAddress } from '../../lib/addresses';
+import { LayerZeroAdapterAbi } from '../../lib/abi/LayerZeroAdapter';
 import { 
   findOptimalRoute,
   findMultipleRoutes,
@@ -98,6 +99,9 @@ export default function SettlementSwitchBridgePage() {
   const [txHash, setTxHash] = useState<string | null>(null);
   const [transferId, setTransferId] = useState<string | null>(null);
   const [routeError, setRouteError] = useState<string | null>(null);
+  const [pairError, setPairError] = useState<string | null>(null);
+  const [isPairSupported, setIsPairSupported] = useState<boolean | null>(null);
+  const [isCheckingPair, setIsCheckingPair] = useState<boolean>(false);
   
   // Enhanced features
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -114,20 +118,21 @@ export default function SettlementSwitchBridgePage() {
   // Network validation with change detection
   useEffect(() => {
     if (isConnected && chainId) {
-      const supportedChains = [CHAIN_ID.sepolia, CHAIN_ID.arbitrumSepolia, CHAIN_ID.arbitrumOne];
+      const supportedChains = [CHAIN_ID.sepolia, CHAIN_ID.arbitrumSepolia, CHAIN_ID.arbitrumOne, CHAIN_ID.mainnet];
       
       setIsNetworkChanging(false);
       
       if (!supportedChains.includes(chainId)) {
-        setNetworkError(`Unsupported network. Please switch to Sepolia, Arbitrum Sepolia, or Arbitrum One.`);
+        setNetworkError(`Unsupported network. Please switch to Sepolia, Arbitrum Sepolia, Arbitrum One, or Ethereum Mainnet.`);
       } else {
         setNetworkError(null);
-        const currentChain =
-          chainId === CHAIN_ID.sepolia
-            ? "sepolia"
-            : chainId === CHAIN_ID.arbitrumSepolia
-            ? "arbitrumSepolia"
-            : "arbitrumOne";
+        let currentChain: Chain;
+        
+        if (chainId === CHAIN_ID.sepolia) currentChain = "sepolia";
+        else if (chainId === CHAIN_ID.arbitrumSepolia) currentChain = "arbitrumSepolia";
+        else if (chainId === CHAIN_ID.arbitrumOne) currentChain = "arbitrumOne";
+        else if (chainId === CHAIN_ID.mainnet) currentChain = "mainnet";
+        else currentChain = "sepolia"; // Fallback
         
         if (fromChain !== currentChain) {
           setFromChain(currentChain);
@@ -153,11 +158,82 @@ export default function SettlementSwitchBridgePage() {
     setSelectedToken(token);
   }, []);
 
+  // Pre-check: validate route support before user enters amount
+  useEffect(() => {
+    const checkPair = async () => {
+      if (!publicClient || !selectedToken) {
+        setIsPairSupported(null);
+        setPairError(null);
+        return;
+      }
+
+      setIsCheckingPair(true);
+      setPairError(null);
+      setIsPairSupported(null);
+
+      try {
+        const srcChain = CHAIN_ID[fromChain];
+        const dstChain = CHAIN_ID[toChain];
+
+        // Resolve LayerZero adapter for source chain; fallback to Sepolia if not configured yet
+        const resolvedAdapter = getContractAddress('LayerZeroAdapter', srcChain);
+        const layerZeroAdapter = (resolvedAdapter && resolvedAdapter.length === 42
+          ? resolvedAdapter
+          : CONTRACT_ADDRESSES.sepolia.LayerZeroAdapter) as `0x${string}`;
+
+        // Resolve token addresses (ETH uses zero address)
+        const tokenInAddress = selectedToken.symbol === 'ETH'
+          ? '0x0000000000000000000000000000000000000000'
+          : (SUPPORTED_TOKENS as any)[fromChain][selectedToken.symbol];
+        const tokenOutAddress = selectedToken.symbol === 'ETH'
+          ? '0x0000000000000000000000000000000000000000'
+          : (SUPPORTED_TOKENS as any)[toChain][selectedToken.symbol];
+
+        // If token out not found on destination chain, immediately block
+        if (!tokenOutAddress) {
+          setIsPairSupported(false);
+          setPairError('Selected token is not available on destination chain.');
+          return;
+        }
+
+        const supported = await publicClient.readContract({
+          address: layerZeroAdapter,
+          abi: LayerZeroAdapterAbi,
+          functionName: 'supportsRoute',
+          args: [
+            tokenInAddress as `0x${string}`,
+            tokenOutAddress as `0x${string}`,
+            BigInt(srcChain),
+            BigInt(dstChain)
+          ]
+        });
+
+        if (!supported) {
+          setIsPairSupported(false);
+          setPairError('LayerZero does not support this route. Please choose a supported pair.');
+        } else {
+          setIsPairSupported(true);
+          setPairError(null);
+        }
+      } catch (err: any) {
+        const message = String(err?.message || err);
+        setIsPairSupported(null);
+        setPairError(`Unable to validate route support: ${message}`);
+      } finally {
+        setIsCheckingPair(false);
+      }
+    };
+
+    checkPair();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fromChain, toChain, selectedToken, publicClient]);
+
   // Fetch multiple routes for comparison
   const fetchRoutes = useCallback(async () => {
     if (!amount || Number(amount) <= 0) return;
     if (!publicClient || !selectedToken) return;
     if (isNetworkChanging) return; // Don't fetch during network changes
+    if (isPairSupported === false) return; // Block unsupported pairs before route fetch
     
     setLoading(true);
     setIsLoadingRoute(true);
@@ -309,7 +385,7 @@ export default function SettlementSwitchBridgePage() {
   };
 
   const selectedRoute = routeOptions[selectedRouteIndex];
-  const canBridge = amount && Number(amount) > 0 && selectedToken && routeOptions.length > 0 && !isSubmitting && !isNetworkChanging;
+  const canBridge = amount && Number(amount) > 0 && selectedToken && routeOptions.length > 0 && !isSubmitting && !isNetworkChanging && isPairSupported !== false;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -451,6 +527,21 @@ export default function SettlementSwitchBridgePage() {
                   </div>
                 </div>
 
+                {/* Unsupported Pair Hint */}
+                {pairError && (
+                  <div className={clsx(
+                    'p-3 sm:p-4 border rounded-lg mx-2 sm:mx-0',
+                    (isPairSupported === false) ? 'bg-yellow-50 border-yellow-200' : 'bg-gray-50 border-gray-200'
+                  )}>
+                    <div className="flex items-center">
+                      <AlertCircle className={clsx('h-4 w-4 sm:h-5 sm:w-5 mr-2 flex-shrink-0', (isPairSupported === false) ? 'text-yellow-600' : 'text-gray-500')} />
+                      <span className={clsx('text-xs sm:text-sm', (isPairSupported === false) ? 'text-yellow-700' : 'text-gray-700')}>
+                        {pairError}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Amount Input */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Amount</label>
@@ -459,7 +550,7 @@ export default function SettlementSwitchBridgePage() {
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="0.0"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isPairSupported === false || isCheckingPair}
                     className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-lg sm:text-2xl font-bold"
                   />
                 </div>

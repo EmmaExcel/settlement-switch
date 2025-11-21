@@ -4,30 +4,37 @@ export const CONTRACT_ADDRESSES = {
   sepolia: {
     // Legacy StablecoinSwitch (keeping for backward compatibility)
     StablecoinSwitch: "0x1fca7be27d3981ab8783f862672f2be6346383d5",
-    
+
     // Settlement Switch System (New Multi-Bridge Aggregator - Latest deployment with fixed arithmetic)
     SettlementSwitch: "0xC094dD48B8E9017BB5962a1Da8FE9f7B76fb47DA",
     RouteCalculator: "0x4cB5d76dc96f183E3c0DC0DCF8A8d71f6a10824D",
     BridgeRegistry: "0x225A3471178028978081919aa3FF522c57ac7c8B",
     FeeManager: "0x57eDf3dA78760586E4f2BfF50B2613Dc566b424A",
-    
+
     // Bridge Adapters
     LayerZeroAdapter: "0xe5753ba7b2d8ad8a4c6c4d221ea73cfddbb8c313", // Updated with corrected minimum transfer amount
     ConnextAdapter: "0x2f097cd8623eb3b8ea6d161fe87bbf154a238a3f",
     AcrossAdapter: "0x8dfd68e1a08209b727149b2256140af9ce1978f0",
-    
+
     // Legacy addresses
     ArbitrumInbox: "0xaae29b0366299461418f5324a79afc425be5ae21",
     ETHBridge: "", // Add when deployed
     ArbitrumBridgeAdapter: "0x61D490b46a579588448F770aabb7B02582ed9AD9", // Deployed on Sepolia
   },
-  
+
   // Arbitrum Sepolia (Chain ID: 421614) - Updated with new deployed contracts
   arbitrumSepolia: {
     StablecoinSwitch: "0x771bc486143f8a12ebdfc3ca23472fee0a1f6f85", // Same contract deployed on Sepolia
     ArbitrumL2Bridge: "0x3072D9408bBAFdB7C0E0FE53bca8Bed665088444", // Bridge adapter
+
+    // Added from broadcast logs
+    SettlementSwitch: "0x00daab77e5de7aa9643b7c82c704f4e84ead6c47",
+    RouteCalculator: "0x3b7732741bec717450ba8e41957ff13da75ed7b3",
+    BridgeRegistry: "0x0876123851b855a570c70ae9fe72c51d1eac0b5f",
+    FeeManager: "0x902daa2e17dbe89ae26ea4e32cbe295815021322",
+    LayerZeroAdapter: "0xb439f6ebc57cad53788f155a0325b8a670dc5f76"
   },
-  
+
   // Mainnet (Chain ID: 1) - for production
   mainnet: {
     // Fill these after mainnet deploy
@@ -37,7 +44,7 @@ export const CONTRACT_ADDRESSES = {
     FeeManager: "",
     LayerZeroAdapter: ""
   },
-  
+
   // Arbitrum One (Chain ID: 42161) - for production
   arbitrumOne: {
     SettlementSwitch: "0x64aD503BC93faFd92249450A4B6B7eb777e0baF9",
@@ -54,7 +61,7 @@ export const SUPPORTED_TOKENS = {
     ETH: "0x0000000000000000000000000000000000000000", // Native ETH
     WETH: "0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9", // Wrapped ETH (Settlement Switch)
     USDC: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
-    USDT: "0x7169D38820dfd117C3FA1f22a697dBA58d90BA06", 
+    USDT: "0x7169D38820dfd117C3FA1f22a697dBA58d90BA06",
     DAI: "0x3e622317f8C93f7328350cF0B56d9eD4C620C5d6",
     // Add more tokens as needed
   },
